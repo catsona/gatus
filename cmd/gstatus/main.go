@@ -1,9 +1,16 @@
 package main
 
 import (
+	"context"
+	"errors"
 	"fmt"
 	"io"
 	"os"
+	"os/signal"
+	"path/filepath"
+	"syscall"
+
+	"git.pegasko.art/catsona/gstatus/internal/app"
 )
 
 var version = "dev"
@@ -32,5 +39,15 @@ func run(args []string, output io.Writer) error {
 		return fmt.Errorf("unsupported arguments: %v", args)
 	}
 
-	return fmt.Errorf("the monitor is not available in this development build")
+	home, err := os.UserHomeDir()
+	if err != nil {
+		return err
+	}
+	ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
+	defer stop()
+	err = app.Run(ctx, filepath.Join(home, ".gstatus"), output)
+	if errors.Is(err, context.Canceled) {
+		return nil
+	}
+	return err
 }

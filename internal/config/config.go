@@ -7,10 +7,8 @@ import (
 	"net/url"
 	"regexp"
 	"slices"
-	"strings"
 	"text/template"
 	"time"
-	"unicode/utf8"
 
 	"git.pegasko.art/catsona/gstatus/internal/model"
 	"go.yaml.in/yaml/v3"
@@ -162,6 +160,9 @@ func (c Config) Validate() error {
 	if err != nil {
 		return fmt.Errorf("notification template: %w", err)
 	}
+	if err := validateTemplate(tmpl); err != nil {
+		return fmt.Errorf("notification template: %w", err)
+	}
 
 	if err := tmpl.Execute(io.Discard, model.TemplateData{}); err != nil {
 		return fmt.Errorf("notification template: %w", err)
@@ -178,23 +179,14 @@ func (c Config) Validate() error {
 				return fmt.Errorf("invalid key %q", key)
 			}
 
-			if previous, exists := assigned[key]; exists && previous != action {
+			canonical := CanonicalKey(key)
+			if previous, exists := assigned[canonical]; exists && previous != action {
 				return fmt.Errorf("key %q is assigned to %s and %s", key, previous, action)
 			}
 
-			assigned[key] = action
+			assigned[canonical] = action
 		}
 	}
 
 	return nil
-}
-
-func validKey(key string) bool {
-	for _, modifier := range []string{"ctrl+", "alt+", "shift+", "super+"} {
-		key = strings.TrimPrefix(key, modifier)
-	}
-
-	return utf8.RuneCountInString(key) == 1 || slices.Contains([]string{
-		"up", "down", "left", "right", "enter", "tab", "esc", "space", "backspace", "delete", "home", "end", "pgup", "pgdown",
-	}, key)
 }

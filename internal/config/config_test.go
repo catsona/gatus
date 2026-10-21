@@ -11,8 +11,10 @@ func TestRejectsInvalidConfiguration(t *testing.T) {
 		"refresh:\n  interval: 1s\n",
 		"unknown: true\n",
 		"notifications:\n  template: '{{.PR.Missing}}'\n",
+		"notifications:\n  template: '{{if eq .Event.Type \"ci.failure\"}}{{.PR.Missing}}{{end}}'\n",
 		"notifications:\n  events: [typo]\n",
 		"keys:\n  open: [r]\n",
+		"keys:\n  copy_url: [shift+r]\n",
 		"repositories: [not-a-repository]\n",
 		"version: 2\n",
 	} {
@@ -21,6 +23,13 @@ func TestRejectsInvalidConfiguration(t *testing.T) {
 				t.Fatalf("accepted invalid config: %s", input)
 			}
 		})
+	}
+}
+
+func TestFunctionKeysAndModifierOrder(t *testing.T) {
+	_, err := Parse([]byte("keys:\n  copy_url: [f1]\n  open: [shift+ctrl+x]\nnotifications:\n  template: '{{with .PR}}{{.Url}}{{end}} {{range .PR.Runs}}{{.Name}}{{end}}'\n"))
+	if err != nil {
+		t.Fatalf("valid bindings or template rejected: %v", err)
 	}
 }
 
