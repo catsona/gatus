@@ -35,7 +35,11 @@ It produces these archives and `SHA256SUMS` in `dist/`:
 
 Each archive contains `gstatus`. The builds use `CGO_ENABLED=0`. Set `GSTATUS_VERSION` to override the version embedded by the script.
 
-The Forgejo workflow runs on pushes, pull requests and manual dispatch. It needs a runner with the `docker` label. It checks formatting, runs vet and race tests, builds all targets, and uploads `gstatus-binaries`. Download the artifact from the workflow run's page.
+The Forgejo workflow runs on pushes, pull requests and manual dispatch. It needs a runner with the `docker` label. It checks formatting, runs vet and race tests, builds all targets, and uploads `gstatus-binaries`.
+
+Successful pushes to `main` publish the archives and `SHA256SUMS` to the rolling [`latest` prerelease](https://git.pegasko.art/catsona/gstatus/releases/tag/latest). This replaces the previous `latest` release and moves its tag to the built commit. Pushes of `v*` tags publish separate versioned releases. Pull requests and manual dispatches upload workflow artifacts without publishing a release.
+
+Release publication uses the workflow's built-in repository token. No additional secret is needed. The build embeds the version tag for tagged releases and the commit SHA for other builds.
 
 The workflow targets Forgejo 9 and uses `upload-artifact@v3`. A successful local build does not confirm a remote runner completed the workflow.
 

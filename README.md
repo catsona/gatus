@@ -14,6 +14,8 @@ gstatus
 
 For a private repository, Git needs access to `git.pegasko.art`. Set `GOPRIVATE=git.pegasko.art/catsona/gstatus` for the install command if needed.
 
+Prebuilt archives for macOS ARM64, Linux ARM64 and Linux AMD64 are available in [Forgejo Releases](https://git.pegasko.art/catsona/gstatus/releases). The `latest` prerelease tracks successful `main` builds.
+
 The main screen includes search, state filters, sorting and refresh controls. Use arrows or `j`/`k` to select a PR. Click controls or double-click a PR to open it. Press `?` for shortcuts and `,` for settings.
 
 | Key | Action |

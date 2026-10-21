@@ -29,6 +29,8 @@ jobs:
         run: go test -race ./...
 
       - name: Build binaries
+        env:
+          GSTATUS_VERSION: ${{ startsWith(github.ref, 'refs/tags/v') && github.ref_name || github.sha }}
         run: sh scripts/build.sh
 
       - name: Upload binaries
@@ -39,3 +41,39 @@ jobs:
             dist/*.tar.gz
             dist/SHA256SUMS
           if-no-files-found: error
+
+      - name: Prepare release assets
+        if: github.event_name == 'push' && (github.ref == 'refs/heads/main' || startsWith(github.ref, 'refs/tags/v'))
+        run: |
+          mkdir -p dist/release
+          cp dist/*.tar.gz dist/SHA256SUMS dist/release/
+
+      - name: Publish latest prerelease
+        if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+        uses: https://code.forgejo.org/actions/forgejo-release@v2.11.3
+        with:
+          direction: upload
+          url: ${{ github.server_url }}
+          repo: ${{ github.repository }}
+          token: ${{ github.token }}
+          sha: ${{ github.sha }}
+          tag: latest
+          title: Latest main build
+          prerelease: true
+          override: true
+          release-dir: dist/release
+          release-notes: 'Binaries built from main at commit ${{ github.sha }}.'
+
+      - name: Publish versioned release
+        if: github.event_name == 'push' && startsWith(github.ref, 'refs/tags/v')
+        uses: https://code.forgejo.org/actions/forgejo-release@v2.11.3
+        with:
+          direction: upload
+          url: ${{ github.server_url }}
+          repo: ${{ github.repository }}
+          token: ${{ github.token }}
+          sha: ${{ github.sha }}
+          tag: ${{ github.ref_name }}
+          title: gstatus ${{ github.ref_name }}
+          release-dir: dist/release
+          release-notes: 'Binaries built from tag ${{ github.ref_name }} at commit ${{ github.sha }}.'
