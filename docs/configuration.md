@@ -47,6 +47,8 @@ notifications:
 
 `read.mark_on_open` acknowledges displayed events after the browser command succeeds. Events arriving during that command stay unread. Copying never acknowledges events.
 
+Review status colors are green for approval, red for requested changes, yellow for comments, and gray when no review verdict is available. Colors remain visible on read PRs and the selected row.
+
 ## Webhook events
 
 The webhook receives a POST with `Content-Type: application/json` and one field:

@@ -147,6 +147,9 @@ func (m *Model) layout() (string, []hitRegion) {
 				if column.label == "CI" {
 					value = ciStyle(record.PR.CIStatus).Render(value)
 				}
+				if column.label == "Review" {
+					value = reviewStyle(record.PR.ReviewStatus).Render(value)
+				}
 				values = append(values, value)
 			}
 			text := strings.Join(values, " ")
@@ -345,6 +348,19 @@ func ciStyle(value string) lipgloss.Style {
 	case "failure", "failing":
 		return bad
 	case "pending", "running":
+		return waiting
+	default:
+		return muted
+	}
+}
+
+func reviewStyle(value string) lipgloss.Style {
+	switch value {
+	case "approved":
+		return good
+	case "changes_requested":
+		return bad
+	case "commented":
 		return waiting
 	default:
 		return muted
