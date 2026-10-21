@@ -49,6 +49,8 @@ notifications:
 
 Review status colors are green for approval, red for requested changes, yellow for comments, and gray when no review verdict is available. Colors remain visible on read PRs and the selected row.
 
+PR state colors are green for open, red for closed, purple for merged, and gray for draft. In narrow terminals, the state prefix in the title uses the same color.
+
 ## Webhook events
 
 The webhook receives a POST with `Content-Type: application/json` and one field:

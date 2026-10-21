@@ -18,6 +18,7 @@ var (
 	bad       = lipgloss.NewStyle().Foreground(lipgloss.Color("#FF6B81"))
 	good      = lipgloss.NewStyle().Foreground(lipgloss.Color("#A6E22E"))
 	waiting   = lipgloss.NewStyle().Foreground(lipgloss.Color("#FFD866"))
+	merged    = lipgloss.NewStyle().Foreground(lipgloss.Color("#BD93F9"))
 	highlight = lipgloss.NewStyle().Background(lipgloss.Color("#263449")).Foreground(lipgloss.Color("#F8F8F2"))
 )
 
@@ -150,6 +151,16 @@ func (m *Model) layout() (string, []hitRegion) {
 				if column.label == "Review" {
 					value = reviewStyle(record.PR.ReviewStatus).Render(value)
 				}
+				if column.label == "State" {
+					value = stateStyle(prState(record.PR)).Render(value)
+				}
+				if column.label == "Title" && m.width < 130 {
+					state := prState(record.PR)
+					prefix := "[" + state + "]"
+					if strings.HasPrefix(value, prefix) {
+						value = stateStyle(state).Render(prefix) + strings.TrimPrefix(value, prefix)
+					}
+				}
 				values = append(values, value)
 			}
 			text := strings.Join(values, " ")
@@ -232,10 +243,8 @@ func (m *Model) columns() []column {
 				title = record.PR.Repository + ": " + title
 			}
 			if m.width < 130 {
-				if record.PR.Draft {
-					title = "[draft] " + title
-				} else if record.PR.State != "open" {
-					title = "[" + record.PR.State + "] " + title
+				if state := prState(record.PR); state != "open" && state != "" {
+					title = "[" + state + "] " + title
 				}
 			}
 			return title
@@ -253,12 +262,7 @@ func (m *Model) columns() []column {
 	}
 	if m.width >= 130 {
 		columns = append(columns,
-			column{"State", 8, func(record model.Record) string {
-				if record.PR.Draft {
-					return "draft"
-				}
-				return record.PR.State
-			}},
+			column{"State", 8, func(record model.Record) string { return prState(record.PR) }},
 			column{"Activity", 7, func(record model.Record) string {
 				when := record.PR.UpdatedAt
 				for _, value := range []time.Time{record.PR.LastCI, record.PR.LastReview, record.PR.LastMessage} {
@@ -362,6 +366,26 @@ func reviewStyle(value string) lipgloss.Style {
 		return bad
 	case "commented":
 		return waiting
+	default:
+		return muted
+	}
+}
+
+func prState(pr model.PR) string {
+	if pr.State == "open" && pr.Draft {
+		return "draft"
+	}
+	return pr.State
+}
+
+func stateStyle(value string) lipgloss.Style {
+	switch value {
+	case "open":
+		return good
+	case "closed":
+		return bad
+	case "merged":
+		return merged
 	default:
 		return muted
 	}
