@@ -29,17 +29,19 @@ sh scripts/build.sh
 
 It produces these archives and `SHA256SUMS` in `dist/`:
 
-- `gstatus-darwin-arm64.tar.gz`
-- `gstatus-linux-arm64.tar.gz`
-- `gstatus-linux-amd64.tar.gz`
+- `gstatus-<version>-darwin-arm64.tar.gz`
+- `gstatus-<version>-linux-arm64.tar.gz`
+- `gstatus-<version>-linux-amd64.tar.gz`
 
 Each archive contains `gstatus`. The builds use `CGO_ENABLED=0`. Set `GSTATUS_VERSION` to override the version embedded by the script.
 
 The Forgejo workflow runs on pushes, pull requests and manual dispatch. It needs a runner with the `docker` label. It checks formatting, runs vet and race tests, builds all targets, and uploads `gstatus-binaries`.
 
-Successful pushes to `main` publish the archives and `SHA256SUMS` to the rolling [`latest` prerelease](https://git.pegasko.art/catsona/gstatus/releases/tag/latest). This replaces the previous `latest` release and moves its tag to the built commit. Pushes of `v*` tags publish separate versioned releases. Pull requests and manual dispatches upload workflow artifacts without publishing a release.
+Pushes of version tags such as `v0.1.0` publish separate [Forgejo Releases](https://git.pegasko.art/catsona/gstatus/releases) with the archives and `SHA256SUMS`. Release tags remain attached to their original commits. Branch pushes, pull requests and manual dispatches upload workflow artifacts without publishing a release.
 
 Release publication uses the workflow's built-in repository token. No additional secret is needed. The build embeds the version tag for tagged releases and the commit SHA for other builds.
+
+`gstatus --version` reports the linked build version. Installs through `go install ...@v0.1.0` use Go module metadata to report `v0.1.0` without custom linker flags.
 
 The workflow targets Forgejo 9 and uses `upload-artifact@v3`. A successful local build does not confirm a remote runner completed the workflow.
 

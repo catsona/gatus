@@ -8,12 +8,23 @@ import (
 	"os"
 	"os/signal"
 	"path/filepath"
+	"runtime/debug"
 	"syscall"
 
 	"git.pegasko.art/catsona/gstatus/internal/app"
 )
 
 var version = "dev"
+
+func resolveVersion(linked string, info *debug.BuildInfo) string {
+	if linked != "" && linked != "dev" {
+		return linked
+	}
+	if info != nil && info.Main.Version != "" && info.Main.Version != "(devel)" {
+		return info.Main.Version
+	}
+	return "dev"
+}
 
 func main() {
 	if err := run(os.Args[1:], os.Stdout); err != nil {
@@ -26,7 +37,8 @@ func run(args []string, output io.Writer) error {
 	if len(args) == 1 {
 		switch args[0] {
 		case "--version":
-			_, err := fmt.Fprintf(output, "gstatus %s\n", version)
+			info, _ := debug.ReadBuildInfo()
+			_, err := fmt.Fprintf(output, "gstatus %s\n", resolveVersion(version, info))
 			return err
 
 		case "--help", "-h":

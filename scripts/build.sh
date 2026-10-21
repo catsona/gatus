@@ -9,7 +9,7 @@ mkdir -p dist
 for gstatus_target in darwin/arm64 linux/arm64 linux/amd64; do
     gstatus_os=${gstatus_target%/*}
     gstatus_arch=${gstatus_target#*/}
-    gstatus_name="gstatus-${gstatus_os}-${gstatus_arch}"
+    gstatus_name="gstatus-${gstatus_version}-${gstatus_os}-${gstatus_arch}"
 
     mkdir -p "dist/$gstatus_name"
     CGO_ENABLED=0 GOOS="$gstatus_os" GOARCH="$gstatus_arch" go build -trimpath -ldflags "-s -w -X main.version=$gstatus_version" -o "dist/$gstatus_name/gstatus" ./cmd/gstatus
@@ -17,7 +17,7 @@ for gstatus_target in darwin/arm64 linux/arm64 linux/amd64; do
 done
 
 if command -v sha256sum >/dev/null 2>&1; then
-    (cd dist && sha256sum gstatus-*.tar.gz > SHA256SUMS)
+    (cd dist && sha256sum "gstatus-${gstatus_version}-"*.tar.gz > SHA256SUMS)
 else
-    (cd dist && shasum -a 256 gstatus-*.tar.gz > SHA256SUMS)
+    (cd dist && shasum -a 256 "gstatus-${gstatus_version}-"*.tar.gz > SHA256SUMS)
 fi
