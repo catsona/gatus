@@ -68,7 +68,7 @@ func aggregateCI(pr model.PR) (status, fingerprint, summary string) {
 			continue
 		}
 
-		key := check.Revision + ":" + check.App + ":" + check.Name
+		key := fmt.Sprintf("%s:%s:%s:%d", check.Revision, check.App, check.Name, check.RunID)
 		previous, exists := checks[key]
 		if !exists || !checkTime(check).Before(checkTime(previous)) {
 			checks[key] = check

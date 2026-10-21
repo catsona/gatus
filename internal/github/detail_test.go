@@ -24,6 +24,8 @@ func detailFixture(t *testing.T, calls string) *Client {
 		"repos/acme/app/actions/runs/41":          `{"id":41,"workflow_id":5,"name":"Tests","run_attempt":2,"event":"pull_request","head_sha":"head","status":"completed","conclusion":"failure","pull_requests":[{"number":7,"head":{"sha":"head"}}]}`,
 	}
 
+	responses["repos/acme/app/actions/runs?"] = `{"total_count":1,"workflow_runs":[{"id":41,"workflow_id":5,"check_suite_id":8,"name":"Tests","run_attempt":2,"event":"pull_request","head_sha":"head","head_branch":"feature","status":"completed","conclusion":"failure","pull_requests":[{"number":7,"head":{"sha":"head"}}]}]}`
+
 	directory := t.TempDir()
 	var keys []string
 	for key := range responses {
@@ -90,5 +92,26 @@ func TestRerunFailedAndRejectChangedRevision(t *testing.T) {
 	data, err := os.ReadFile(calls)
 	if err != nil || string(data) != "run rerun 41 --repo acme/app --failed\n" {
 		t.Fatalf("incorrect rerun requests: %q %v", data, err)
+	}
+}
+
+func overrideAPI(t *testing.T, base *Client, endpoint, body string) *Client {
+	t.Helper()
+	return fixtureClient(t, "for endpoint do :; done\ncase \"$endpoint\" in '"+endpoint+"'*) printf 'HTTP/1.1 200 OK\\r\\n\\r\\n%s' '"+body+"' ;; *) exec '"+base.Executable+"' \"$@\" ;; esac\n")
+}
+
+func TestWaitingWorkflowWithoutJobsStillBelongsToCI(t *testing.T) {
+	client := overrideAPI(t, detailFixture(t, filepath.Join(t.TempDir(), "calls")), "repos/acme/app/actions/runs?", `{"total_count":2,"workflow_runs":[{"id":41,"workflow_id":5,"head_sha":"head","head_branch":"feature","status":"completed","conclusion":"failure","run_attempt":2},{"id":42,"workflow_id":6,"head_sha":"head","head_branch":"feature","status":"waiting","run_attempt":1}]}`)
+	pr, err := client.Detail(context.Background(), "token", model.PR{Repository: "acme/app", Number: 7})
+	if err != nil || len(pr.Runs) != 2 {
+		t.Fatalf("waiting workflow without a check run was lost: %+v %v", pr.Runs, err)
+	}
+}
+
+func TestLegacyCheckURLResolvesActionsRunByCheckSuite(t *testing.T) {
+	client := overrideAPI(t, detailFixture(t, filepath.Join(t.TempDir(), "calls")), "repos/acme/app/commits/head/check-runs?", `{"check_runs":[{"id":55,"name":"tests","status":"completed","conclusion":"failure","details_url":"https://github.com/acme/app/runs/55","check_suite":{"id":8},"app":{"slug":"github-actions"}}]}`)
+	pr, err := client.Detail(context.Background(), "token", model.PR{Repository: "acme/app", Number: 7})
+	if err != nil || len(pr.Runs) != 1 || pr.Checks[0].RunID != 41 {
+		t.Fatalf("legacy check did not resolve its workflow run: %+v %v", pr, err)
 	}
 }

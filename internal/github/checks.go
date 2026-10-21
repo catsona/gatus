@@ -3,6 +3,7 @@ package github
 import (
 	"context"
 	"fmt"
+	"net/url"
 	"regexp"
 	"sort"
 	"strconv"
@@ -23,6 +24,9 @@ type apiCheck struct {
 	App         struct {
 		Slug string `json:"slug"`
 	} `json:"app"`
+	Suite struct {
+		ID int64 `json:"id"`
+	} `json:"check_suite"`
 }
 
 type apiRun struct {
@@ -32,6 +36,8 @@ type apiRun struct {
 	Name       string    `json:"name"`
 	Event      string    `json:"event"`
 	HeadSHA    string    `json:"head_sha"`
+	HeadBranch string    `json:"head_branch"`
+	SuiteID    int64     `json:"check_suite_id"`
 	State      string    `json:"status"`
 	Conclusion string    `json:"conclusion"`
 	URL        string    `json:"html_url"`
@@ -48,16 +54,30 @@ type apiRun struct {
 
 func (c *Client) loadChecks(ctx context.Context, token string, pr *model.PR) error {
 	seen := map[int64]bool{}
+	revisions := map[string]bool{}
+	runs := map[int64]apiRun{}
+	suites := map[string]int64{}
 	for _, revision := range []string{pr.HeadSHA, pr.MergeSHA} {
-		if revision == "" || (revision == pr.MergeSHA && revision == pr.HeadSHA && len(pr.Checks) > 0) {
+		if revision == "" || revisions[revision] {
 			continue
+		}
+		revisions[revision] = true
+
+		workflows, err := c.workflowRuns(ctx, token, pr.Repository, "head_sha="+url.QueryEscape(revision))
+		if err != nil {
+			return err
+		}
+		for _, run := range workflows {
+			if runMatches(run, *pr) {
+				runs[run.ID] = run
+			}
 		}
 
 		for page := 1; ; page++ {
 			var response struct {
 				Checks []apiCheck `json:"check_runs"`
 			}
-			endpoint := fmt.Sprintf("repos/%s/commits/%s/check-runs?filter=latest&per_page=100&page=%d", pr.Repository, revision, page)
+			endpoint := fmt.Sprintf("repos/%s/commits/%s/check-runs?filter=all&per_page=100&page=%d", pr.Repository, revision, page)
 			if err := c.api(ctx, token, endpoint, &response); err != nil {
 				return err
 			}
@@ -73,6 +93,7 @@ func (c *Client) loadChecks(ctx context.Context, token string, pr *model.PR) err
 					Revision: revision, State: check.State, Conclusion: check.Conclusion, Url: check.URL,
 					StartedAt: check.StartedAt, CompletedAt: check.CompletedAt,
 				}
+				suites[value.ID] = check.Suite.ID
 				prefix := "https://github.com/" + pr.Repository + "/actions/runs/"
 				if strings.HasPrefix(strings.ToLower(check.URL), strings.ToLower(prefix)) {
 					match := regexp.MustCompile(`/actions/runs/(\d+)`).FindStringSubmatch(check.URL)
@@ -126,29 +147,52 @@ func (c *Client) loadChecks(ctx context.Context, token string, pr *model.PR) err
 		}
 	}
 
-	runIDs := map[int64]bool{}
-	for _, check := range pr.Checks {
-		if check.RunID == 0 || runIDs[check.RunID] {
+	for index := range pr.Checks {
+		check := &pr.Checks[index]
+		if check.RunID == 0 && check.App == "github-actions" && suites[check.ID] != 0 {
+			suiteID := suites[check.ID]
+			for _, run := range runs {
+				if run.SuiteID == suiteID {
+					check.RunID = run.ID
+					break
+				}
+			}
+			if check.RunID == 0 {
+				workflows, err := c.workflowRuns(ctx, token, pr.Repository, fmt.Sprintf("check_suite_id=%d", suiteID))
+				if err != nil {
+					return err
+				}
+				for _, run := range workflows {
+					if runMatches(run, *pr) {
+						runs[run.ID] = run
+						check.RunID = max(check.RunID, run.ID)
+					}
+				}
+			}
+		}
+
+		if check.RunID == 0 {
 			continue
 		}
-		runIDs[check.RunID] = true
-
-		var run apiRun
-		if err := c.api(ctx, token, fmt.Sprintf("repos/%s/actions/runs/%d", pr.Repository, check.RunID), &run); err != nil {
-			return err
+		if _, exists := runs[check.RunID]; !exists {
+			var run apiRun
+			if err := c.api(ctx, token, fmt.Sprintf("repos/%s/actions/runs/%d", pr.Repository, check.RunID), &run); err != nil {
+				return err
+			}
+			if !runMatches(run, *pr) {
+				return fmt.Errorf("workflow run %d belongs to an outdated PR revision", run.ID)
+			}
+			runs[run.ID] = run
 		}
+	}
 
-		matches := run.HeadSHA == pr.HeadSHA || (pr.MergeSHA != "" && run.HeadSHA == pr.MergeSHA)
-		for _, linked := range run.PRs {
-			matches = matches || (linked.Number == pr.Number && linked.Head.SHA == pr.HeadSHA)
+	for _, run := range runs {
+		name := run.Name
+		if name == "" {
+			name = fmt.Sprintf("workflow %d", run.WorkflowID)
 		}
-
-		if !matches {
-			return fmt.Errorf("workflow run %d belongs to an outdated PR revision", run.ID)
-		}
-
 		pr.Runs = append(pr.Runs, model.Run{
-			ID: run.ID, WorkflowID: run.WorkflowID, Attempt: run.Attempt, Name: run.Name, Event: run.Event,
+			ID: run.ID, WorkflowID: run.WorkflowID, Attempt: run.Attempt, Name: name, Event: run.Event,
 			HeadSHA: run.HeadSHA, State: run.State, Conclusion: run.Conclusion, Url: run.URL,
 			CreatedAt: run.CreatedAt, StartedAt: run.StartedAt, UpdatedAt: run.UpdatedAt,
 		})
@@ -158,6 +202,39 @@ func (c *Client) loadChecks(ctx context.Context, token string, pr *model.PR) err
 	sort.Slice(pr.Checks, func(i, j int) bool { return pr.Checks[i].ID < pr.Checks[j].ID })
 	sort.Slice(pr.Runs, func(i, j int) bool { return pr.Runs[i].ID < pr.Runs[j].ID })
 	return nil
+}
+
+func runMatches(run apiRun, pr model.PR) bool {
+	for _, linked := range run.PRs {
+		if linked.Number == pr.Number && linked.Head.SHA == pr.HeadSHA {
+			return true
+		}
+	}
+	if len(run.PRs) > 0 && strings.HasPrefix(run.Event, "pull_request") {
+		return false
+	}
+	return (run.HeadSHA == pr.HeadSHA || (pr.MergeSHA != "" && run.HeadSHA == pr.MergeSHA)) && run.HeadBranch == pr.HeadRef
+}
+
+func (c *Client) workflowRuns(ctx context.Context, token, repository, qualifier string) ([]apiRun, error) {
+	var result []apiRun
+	for page := 1; ; page++ {
+		var response struct {
+			Total int      `json:"total_count"`
+			Runs  []apiRun `json:"workflow_runs"`
+		}
+		endpoint := fmt.Sprintf("repos/%s/actions/runs?%s&per_page=100&page=%d", repository, qualifier, page)
+		if err := c.api(ctx, token, endpoint, &response); err != nil {
+			return nil, err
+		}
+		if response.Total > 1000 {
+			return nil, fmt.Errorf("CI history exceeds GitHub's 1000-run query limit")
+		}
+		result = append(result, response.Runs...)
+		if len(response.Runs) < 100 {
+			return result, nil
+		}
+	}
 }
 
 // Result reports accepted requests and each failed request without retrying mutations.

@@ -53,11 +53,13 @@ func (c *Client) output(ctx context.Context, token string, args ...string) ([]by
 	ctx, cancel := context.WithTimeout(ctx, 20*time.Second)
 	defer cancel()
 
-	select {
-	case c.slots <- struct{}{}:
-		defer func() { <-c.slots }()
-	case <-ctx.Done():
-		return nil, ctx.Err()
+	if len(args) == 0 || args[0] != "auth" {
+		select {
+		case c.slots <- struct{}{}:
+			defer func() { <-c.slots }()
+		case <-ctx.Done():
+			return nil, ctx.Err()
+		}
 	}
 
 	executable := c.Executable

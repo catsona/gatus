@@ -3,11 +3,13 @@ package github
 import (
 	"context"
 	"encoding/json"
+	"fmt"
 	"os"
 	"path/filepath"
 	"strings"
 	"sync"
 	"testing"
+	"time"
 )
 
 func fixtureClient(t *testing.T, script string) *Client {
@@ -90,5 +92,36 @@ func TestIncompleteSearchAndMalformedResponsesFail(t *testing.T) {
 		if _, err := client.List(context.Background(), "token", "alice", nil, "open"); err == nil {
 			t.Fatalf("accepted incomplete response: %s", body)
 		}
+	}
+}
+
+func TestCredentialsAreNotBlockedByActiveNetworkRequests(t *testing.T) {
+	directory := t.TempDir()
+	client := fixtureClient(t, "if [ \"$1\" = auth ]; then printf credential; exit 0; fi\nprintf ready > '"+directory+"/'\"$1\"\nexec /bin/sleep 5\n")
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+	var workers sync.WaitGroup
+	for i := 0; i < 4; i++ {
+		name := fmt.Sprintf("request-%d", i)
+		workers.Go(func() { _, _ = client.output(ctx, "token", name) })
+	}
+
+	deadline := time.Now().Add(3 * time.Second)
+	for {
+		files, _ := filepath.Glob(filepath.Join(directory, "request-*"))
+		if len(files) == 4 {
+			break
+		}
+		if time.Now().After(deadline) {
+			t.Fatal("network fixtures did not start")
+		}
+		time.Sleep(10 * time.Millisecond)
+	}
+
+	token, err := client.Credentials(context.Background())
+	cancel()
+	workers.Wait()
+	if err != nil || token != "credential" {
+		t.Fatalf("account detection waited behind PR fetches: %q %v", token, err)
 	}
 }
