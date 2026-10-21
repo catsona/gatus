@@ -125,45 +125,50 @@ func (m *Model) layout() (string, []hitRegion) {
 		available := max(0, bodyEnd-len(lines))
 		for index := m.offset; index < len(rows) && index < m.offset+available; index++ {
 			record := rows[index]
+			rowStyle := lipgloss.NewStyle()
+			if record.PR.ID == m.selectedID {
+				rowStyle = highlight
+			} else if record.UnreadCount() == 0 {
+				rowStyle = muted
+			} else {
+				rowStyle = rowStyle.Bold(true)
+			}
+
 			var values []string
 			for _, column := range columns {
 				value := cell(column.value(record), column.width)
+				style := rowStyle
 				if column.label == "↻" {
-					style := muted
+					foreground := muted.GetForeground()
 					switch m.snapshot.RefreshStates[record.PR.ID] {
 					case monitor.RefreshQueued:
-						style = waiting
+						foreground = waiting.GetForeground()
 					case monitor.RefreshRunning:
-						style = accent
+						foreground = accent.GetForeground()
 					}
-					value = style.Render(value)
+					style = style.Foreground(foreground)
 				}
 				if column.label == "CI" {
-					value = ciStyle(record.PR.CIStatus).Render(value)
+					style = style.Foreground(ciStyle(record.PR.CIStatus).GetForeground())
 				}
 				if column.label == "Review" {
-					value = reviewStyle(record.PR.ReviewStatus).Render(value)
+					style = style.Foreground(reviewStyle(record.PR.ReviewStatus).GetForeground())
 				}
 				if column.label == "State" {
-					value = stateStyle(prState(record.PR)).Render(value)
+					style = style.Foreground(stateStyle(prState(record.PR)).GetForeground())
 				}
 				if column.label == "Title" && m.width < 130 {
 					state := prState(record.PR)
 					prefix := "[" + state + "]"
 					if strings.HasPrefix(value, prefix) {
-						value = stateStyle(state).Render(prefix) + strings.TrimPrefix(value, prefix)
+						prefixStyle := style.Foreground(stateStyle(state).GetForeground())
+						values = append(values, prefixStyle.Render(prefix)+style.Render(strings.TrimPrefix(value, prefix)))
+						continue
 					}
 				}
-				values = append(values, value)
+				values = append(values, style.Render(value))
 			}
-			text := strings.Join(values, " ")
-			if record.PR.ID == m.selectedID {
-				text = highlight.Render(text)
-			} else if record.UnreadCount() == 0 {
-				text = muted.Render(text)
-			} else {
-				text = lipgloss.NewStyle().Bold(true).Render(text)
-			}
+			text := strings.Join(values, rowStyle.Render(" "))
 			regions = append(regions, hitRegion{x: 0, y: len(lines), width: m.width, action: "row", id: record.PR.ID})
 			lines = append(lines, text)
 		}
