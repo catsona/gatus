@@ -22,6 +22,7 @@ type Source interface {
 	List(context.Context, string, string, []string, string) ([]model.PR, error)
 	Detail(context.Context, string, model.PR) (model.PR, error)
 	Rerun(context.Context, string, model.PR, bool) (github.Result, error)
+	Cancel(context.Context, string, model.PR) (github.Result, error)
 }
 
 // Snapshot is an immutable view of the current account and loading progress.
@@ -425,6 +426,17 @@ func (e *Engine) MarkUnread(id string) error {
 
 // Rerun rechecks active credentials before sending any CI mutation.
 func (e *Engine) Rerun(ctx context.Context, id string, failedOnly bool) (github.Result, error) {
+	return e.ciAction(ctx, id, func(ctx context.Context, token string, pr model.PR) (github.Result, error) {
+		return e.source.Rerun(ctx, token, pr, failedOnly)
+	})
+}
+
+// Cancel rechecks credentials before cancelling the selected PR's active CI.
+func (e *Engine) Cancel(ctx context.Context, id string) (github.Result, error) {
+	return e.ciAction(ctx, id, e.source.Cancel)
+}
+
+func (e *Engine) ciAction(ctx context.Context, id string, action func(context.Context, string, model.PR) (github.Result, error)) (github.Result, error) {
 	token, err := e.source.Credentials(ctx)
 	if err != nil {
 		return github.Result{}, err
@@ -448,7 +460,7 @@ func (e *Engine) Rerun(ctx context.Context, id string, failedOnly bool) (github.
 	defer cancel()
 	stop := context.AfterFunc(ctx, cancel)
 	defer stop()
-	result, err := e.source.Rerun(requestCtx, token, record.PR, failedOnly)
+	result, err := action(requestCtx, token, record.PR)
 	e.mu.Lock()
 	changed := generation != e.generation
 	e.mu.Unlock()

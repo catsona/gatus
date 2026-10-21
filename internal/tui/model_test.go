@@ -19,9 +19,10 @@ import (
 )
 
 type backendFixture struct {
-	snapshot monitor.Snapshot
-	marked   []uint64
-	cfg      config.Config
+	snapshot  monitor.Snapshot
+	marked    []uint64
+	cfg       config.Config
+	cancelled []string
 }
 
 func (b *backendFixture) Updates() <-chan monitor.Snapshot {
@@ -48,6 +49,11 @@ func (b *backendFixture) MarkUnread(string) error {
 }
 
 func (b *backendFixture) Rerun(context.Context, string, bool) (github.Result, error) {
+	return github.Result{Accepted: 1}, nil
+}
+
+func (b *backendFixture) Cancel(_ context.Context, id string) (github.Result, error) {
+	b.cancelled = append(b.cancelled, id)
 	return github.Result{Accepted: 1}, nil
 }
 
@@ -205,6 +211,23 @@ func TestSettingsDoNotRunCIHotkeys(t *testing.T) {
 	press(m, ',')
 	if cmd := press(m, 'R'); cmd != nil {
 		t.Fatal("a main-screen CI action was started from settings")
+	}
+}
+
+func TestCancelCapturesSelectedPRAndPreventsDuplicateRequests(t *testing.T) {
+	m, backend, _ := testModel(t, config.Default())
+	press(m, 'j')
+	command := press(m, 'x')
+	if command == nil {
+		t.Fatal("cancel shortcut did not start an operation")
+	}
+	if repeated := press(m, 'x'); repeated != nil {
+		t.Fatal("duplicate cancellation started while the first was pending")
+	}
+	press(m, 'k')
+	m.Update(command())
+	if len(backend.cancelled) != 1 || backend.cancelled[0] != "a" || len(backend.marked) != 0 {
+		t.Fatalf("cancel used the wrong selection or acknowledged it: %+v %+v", backend.cancelled, backend.marked)
 	}
 }
 

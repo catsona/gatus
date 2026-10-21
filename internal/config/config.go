@@ -91,7 +91,8 @@ func Default() Config {
 			"refresh": {"r"}, "toggle_auto_refresh": {"a"}, "refresh_interval": {"i"},
 			"search": {"/"}, "filter": {"f"}, "sort": {"s"},
 			"rerun_all": {"ctrl+r"}, "rerun_failed": {"R"},
-			"settings": {","}, "help": {"?"}, "back": {"esc"}, "quit": {"q", "ctrl+c"},
+			"cancel_ci": {"x"},
+			"settings":  {","}, "help": {"?"}, "back": {"esc"}, "quit": {"q", "ctrl+c"},
 		},
 	}
 }

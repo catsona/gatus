@@ -28,6 +28,7 @@ type Backend interface {
 	MarkRead(string, uint64) error
 	MarkUnread(string) error
 	Rerun(context.Context, string, bool) (github.Result, error)
+	Cancel(context.Context, string) (github.Result, error)
 }
 
 // Desktop launches the browser and copies links without acknowledging PR events.

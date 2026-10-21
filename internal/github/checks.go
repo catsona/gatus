@@ -294,3 +294,42 @@ func (c *Client) Rerun(ctx context.Context, token string, selected model.PR, fai
 
 	return result, nil
 }
+
+// Cancel requests cancellation of current, active Actions executions without retrying mutations.
+func (c *Client) Cancel(ctx context.Context, token string, selected model.PR) (Result, error) {
+	current, err := c.basic(ctx, token, selected)
+	if err != nil {
+		return Result{}, err
+	}
+	if current.HeadSHA != selected.HeadSHA || current.MergeSHA != selected.MergeSHA {
+		return Result{}, fmt.Errorf("PR revision changed; refresh before cancelling CI")
+	}
+	if err := c.loadChecks(ctx, token, &current); err != nil {
+		return Result{}, err
+	}
+
+	latestRuns := map[string]model.Run{}
+	for _, run := range current.Runs {
+		key := fmt.Sprintf("%d:%s:%s", run.WorkflowID, run.Event, run.HeadSHA)
+		if run.ID >= latestRuns[key].ID {
+			latestRuns[key] = run
+		}
+	}
+
+	var result Result
+	for _, run := range latestRuns {
+		if run.State == "completed" || run.State == "" {
+			continue
+		}
+		args := []string{"run", "cancel", strconv.FormatInt(run.ID, 10), "--repo", current.Repository}
+		if _, err := c.output(ctx, token, args...); err != nil {
+			result.Failures = append(result.Failures, fmt.Sprintf("%s: %v", run.Name, err))
+		} else {
+			result.Accepted++
+		}
+	}
+	if result.Accepted == 0 && len(result.Failures) == 0 {
+		return result, fmt.Errorf("no active GitHub Actions runs match this PR")
+	}
+	return result, nil
+}

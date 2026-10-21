@@ -26,6 +26,7 @@ The main screen includes search, state filters, sorting and refresh controls. Us
 | `r` / `a` / `i` | Refresh / toggle auto-refresh / change interval |
 | `/` / `f` / `s` | Search / filter / sort |
 | `R` / Ctrl+R | Rerun failed jobs / all jobs |
+| `x` | Cancel active CI for the selected PR |
 | `q` | Quit |
 
 All settings and state live in `~/.gstatus/`. Edit `config.yaml` or use the settings screen. Changes apply without a restart. The first load marks existing PRs read. Copying never changes read state.

@@ -9,9 +9,10 @@ import (
 	tea "charm.land/bubbletea/v2"
 	"git.pegasko.art/catsona/gstatus/internal/config"
 	"git.pegasko.art/catsona/gstatus/internal/desktop"
+	"git.pegasko.art/catsona/gstatus/internal/github"
 )
 
-var controls = []string{"search", "filter", "sort", "toggle_auto_refresh", "refresh_interval", "refresh", "settings"}
+var controls = []string{"search", "filter", "sort", "toggle_auto_refresh", "refresh_interval", "refresh", "cancel_ci", "settings"}
 
 func (m *Model) action(key tea.KeyPressMsg) string {
 	for action, bindings := range m.cfg.Keys {
@@ -167,7 +168,7 @@ func (m *Model) perform(action string) tea.Cmd {
 		if err != nil {
 			m.setMessage(err.Error())
 		}
-	case "open", "copy_url", "rerun_all", "rerun_failed":
+	case "open", "copy_url", "rerun_all", "rerun_failed", "cancel_ci":
 		record, ok := m.selected()
 		if !ok {
 			return nil
@@ -176,12 +177,15 @@ func (m *Model) perform(action string) tea.Cmd {
 		backend, system, ctx := m.backend, m.desktop, m.ctx
 		id, address, sequence, generation := record.PR.ID, record.PR.Url, record.Sequence, m.snapshot.Generation
 		markOnOpen := m.cfg.Read.MarkOnOpen
-		if strings.HasPrefix(action, "rerun_") {
+		if strings.HasPrefix(action, "rerun_") || action == "cancel_ci" {
 			if m.busy[id] {
 				return nil
 			}
 			m.busy[id] = true
 			m.setMessage("Requesting CI rerun…")
+			if action == "cancel_ci" {
+				m.setMessage("Requesting CI cancellation…")
+			}
 		}
 
 		return func() tea.Msg {
@@ -199,9 +203,18 @@ func (m *Model) perform(action string) tea.Cmd {
 				}
 			default:
 				result.releaseBusy = true
-				rerun, err := backend.Rerun(ctx, id, action == "rerun_failed")
+				var rerun github.Result
+				var err error
+				if action == "cancel_ci" {
+					rerun, err = backend.Cancel(ctx, id)
+				} else {
+					rerun, err = backend.Rerun(ctx, id, action == "rerun_failed")
+				}
 				result.err = err
 				result.message = fmt.Sprintf("CI: %d rerun requests accepted", rerun.Accepted)
+				if action == "cancel_ci" {
+					result.message = fmt.Sprintf("CI: %d cancellation requests accepted", rerun.Accepted)
+				}
 				if len(rerun.Failures) > 0 {
 					result.message += "; " + strings.Join(rerun.Failures, "; ")
 				}
@@ -260,7 +273,7 @@ func (m *Model) menuOptions() []menuOption {
 		return []menuOption{{"created", "Created"}, {"updated", "PR updated"}, {"ci", "Last CI"}, {"review", "Last review"}, {"message", "Last message"}, {"reverse", "Reverse order"}}
 	default:
 		var result []menuOption
-		for _, action := range []string{"open", "copy_url", "mark_read", "mark_unread", "rerun_all", "rerun_failed", "search", "filter", "sort", "refresh", "toggle_auto_refresh", "refresh_interval", "settings", "quit"} {
+		for _, action := range []string{"open", "copy_url", "mark_read", "mark_unread", "rerun_all", "rerun_failed", "cancel_ci", "search", "filter", "sort", "refresh", "toggle_auto_refresh", "refresh_interval", "settings", "quit"} {
 			result = append(result, menuOption{value: action, label: strings.Join(m.cfg.Keys[action], ", ") + "  " + actionLabel(action)})
 		}
 		return result

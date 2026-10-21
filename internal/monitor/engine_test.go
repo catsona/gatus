@@ -18,6 +18,7 @@ type accountSource struct {
 	token   string
 	started chan struct{}
 	release chan struct{}
+	cancels int
 }
 
 func (s *accountSource) Credentials(context.Context) (string, error) {
@@ -46,6 +47,13 @@ func (s *accountSource) Detail(_ context.Context, token string, pr model.PR) (mo
 }
 
 func (s *accountSource) Rerun(context.Context, string, model.PR, bool) (github.Result, error) {
+	return github.Result{Accepted: 1}, nil
+}
+
+func (s *accountSource) Cancel(context.Context, string, model.PR) (github.Result, error) {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	s.cancels++
 	return github.Result{Accepted: 1}, nil
 }
 
@@ -119,6 +127,32 @@ func TestRerunDetectsAccountSwitchBeforeMutation(t *testing.T) {
 	source.mu.Unlock()
 	if _, err := engine.Rerun(context.Background(), "PR_alice", true); err == nil {
 		t.Fatal("rerun accepted after the active account changed")
+	}
+}
+
+func TestCancelDetectsAccountSwitchBeforeMutation(t *testing.T) {
+	store, err := state.Open(filepath.Join(t.TempDir(), "state.db"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer store.Close()
+	source := &accountSource{token: "alice"}
+	engine := New(source, store, config.Default())
+	if err := engine.CheckAccount(context.Background()); err != nil {
+		t.Fatal(err)
+	}
+	if err := engine.Refresh(context.Background()); err != nil {
+		t.Fatal(err)
+	}
+
+	source.mu.Lock()
+	source.token = "bob"
+	source.mu.Unlock()
+	if _, err := engine.Cancel(context.Background(), "PR_alice"); err == nil {
+		t.Fatal("cancel accepted after the active account changed")
+	}
+	if source.cancels != 0 {
+		t.Fatal("sent cancellation using an inactive account")
 	}
 }
 

@@ -115,3 +115,40 @@ func TestLegacyCheckURLResolvesActionsRunByCheckSuite(t *testing.T) {
 		t.Fatalf("legacy check did not resolve its workflow run: %+v %v", pr, err)
 	}
 }
+
+func TestCancelSelectsOnlyCurrentActiveWorkflowExecutions(t *testing.T) {
+	calls := filepath.Join(t.TempDir(), "calls")
+	client := overrideAPI(t, detailFixture(t, calls), "repos/acme/app/actions/runs?", `{"workflow_runs":[{"id":41,"workflow_id":5,"head_sha":"head","head_branch":"feature","status":"completed"},{"id":42,"workflow_id":5,"head_sha":"head","head_branch":"feature","status":"in_progress"},{"id":43,"workflow_id":6,"head_sha":"head","head_branch":"feature","status":"queued"},{"id":44,"workflow_id":7,"head_sha":"old","head_branch":"feature","status":"in_progress"}]}`)
+	selected := model.PR{Repository: "acme/app", Number: 7, HeadSHA: "head"}
+
+	result, err := client.Cancel(context.Background(), "token", selected)
+	if err != nil || result.Accepted != 2 || len(result.Failures) != 0 {
+		t.Fatalf("cancel: %+v %v", result, err)
+	}
+
+	selected.HeadSHA = "outdated"
+	if _, err := client.Cancel(context.Background(), "token", selected); err == nil {
+		t.Fatal("cancel accepted after the selected revision changed")
+	}
+	data, err := os.ReadFile(calls)
+	if err != nil {
+		t.Fatal(err)
+	}
+	lines := strings.Split(strings.TrimSpace(string(data)), "\n")
+	sort.Strings(lines)
+	if strings.Join(lines, "\n") != "run cancel 42 --repo acme/app\nrun cancel 43 --repo acme/app" {
+		t.Fatalf("cancelled unrelated or completed CI: %q", data)
+	}
+}
+
+func TestCancelDoesNotMutateCompletedWorkflows(t *testing.T) {
+	calls := filepath.Join(t.TempDir(), "calls")
+	client := detailFixture(t, calls)
+	result, err := client.Cancel(context.Background(), "token", model.PR{Repository: "acme/app", Number: 7, HeadSHA: "head"})
+	if err == nil || result.Accepted != 0 {
+		t.Fatalf("completed workflow accepted for cancellation: %+v %v", result, err)
+	}
+	if _, err := os.Stat(calls); !os.IsNotExist(err) {
+		t.Fatal("sent a mutation for completed CI")
+	}
+}

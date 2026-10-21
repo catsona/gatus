@@ -67,6 +67,8 @@ Bot activity counts. Your own comments and reviews do not trigger notifications.
 
 CI uses the current head and merge revisions, workflow runs and attempts. A terminal result must remain unchanged across two observations at least five seconds apart. With a `30s` interval, this usually takes the next refresh. Superseded cancellations do not notify. External checks display status, but reruns apply only to GitHub Actions.
 
+`cancel_ci` cancels the selected PR's active GitHub Actions executions. It includes queued and running workflows for the current revision, skips completed executions, and rechecks the account and revision before sending requests. External CI cannot be cancelled through this action. An accepted cancellation can take time to appear in the status.
+
 GitHub does not expose a final list of every workflow that might start later. A delayed workflow can therefore produce a later CI result. Missing permissions, incomplete pagination and rate limits display errors instead of a successful CI result.
 
 Notifications start after the account baseline. Enabling them does not replay history. The persistent queue sends only for the active account. Changing the URL or template affects the next delivery. Disabling events removes their pending deliveries, including paused accounts.
@@ -115,6 +117,7 @@ keys:
   sort: [s]
   rerun_all: [ctrl+r]
   rerun_failed: [R]
+  cancel_ci: [x]
   settings: [","]
   help: ["?"]
   back: [esc]
