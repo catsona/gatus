@@ -24,6 +24,7 @@ The main screen includes search, state filters, sorting and refresh controls. Us
 | `y` | Copy the PR URL |
 | `m` / `u` | Mark read / unread |
 | `r` / `a` / `i` | Refresh / toggle auto-refresh / change interval |
+| `p` | Refresh only the selected PR |
 | `/` / `f` / `s` | Search / filter / sort |
 | `R` / Ctrl+R | Rerun failed jobs / all jobs |
 | `x` | Cancel active CI for the selected PR |

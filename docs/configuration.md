@@ -39,6 +39,8 @@ notifications:
 
 `refresh.interval` accepts Go duration strings, with a minimum of `5s`. Account detection runs independently every two seconds, including when auto-refresh is off.
 
+`refresh_selected` updates only the selected PR's CI, reviews and comments. It does not rediscover the list or fetch other PRs, and it preserves read marks. The action works with auto-refresh disabled. `refresh` still refreshes the full list.
+
 `view.filter` accepts `all`, `open`, `closed`, `draft` and `merged`. `open` includes drafts. `closed` excludes merged PRs. Historical PRs load when the selected filter needs them.
 
 `view.sort` accepts `created`, `updated`, `ci`, `review` and `message`. Message time includes issue comments and review-thread comments. Unknown times sort last. Search matches repository, PR number and title locally.
@@ -110,6 +112,7 @@ keys:
   mark_read: [m]
   mark_unread: [u]
   refresh: [r]
+  refresh_selected: [p]
   toggle_auto_refresh: [a]
   refresh_interval: [i]
   search: [/]

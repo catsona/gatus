@@ -317,7 +317,9 @@ func (m *Model) controlLabel(action string) string {
 	case "refresh_interval":
 		return time.Duration(m.cfg.Refresh.Interval).String()
 	case "refresh":
-		return "Refresh"
+		return "Refresh all"
+	case "refresh_selected":
+		return "Refresh PR"
 	case "cancel_ci":
 		return "Cancel CI"
 	default:

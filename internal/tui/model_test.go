@@ -19,10 +19,12 @@ import (
 )
 
 type backendFixture struct {
-	snapshot  monitor.Snapshot
-	marked    []uint64
-	cfg       config.Config
-	cancelled []string
+	snapshot   monitor.Snapshot
+	marked     []uint64
+	cfg        config.Config
+	cancelled  []string
+	refreshed  []string
+	refreshAll int
 }
 
 func (b *backendFixture) Updates() <-chan monitor.Snapshot {
@@ -37,7 +39,14 @@ func (b *backendFixture) SetConfig(cfg config.Config) {
 	b.cfg = cfg
 }
 
-func (b *backendFixture) RequestRefresh() {}
+func (b *backendFixture) RequestRefresh() {
+	b.refreshAll++
+}
+
+func (b *backendFixture) RefreshPR(_ context.Context, id string) error {
+	b.refreshed = append(b.refreshed, id)
+	return nil
+}
 
 func (b *backendFixture) MarkRead(_ string, through uint64) error {
 	b.marked = append(b.marked, through)
@@ -228,6 +237,20 @@ func TestCancelCapturesSelectedPRAndPreventsDuplicateRequests(t *testing.T) {
 	m.Update(command())
 	if len(backend.cancelled) != 1 || backend.cancelled[0] != "a" || len(backend.marked) != 0 {
 		t.Fatalf("cancel used the wrong selection or acknowledged it: %+v %+v", backend.cancelled, backend.marked)
+	}
+}
+
+func TestSelectedRefreshDoesNotRequestTheWholeList(t *testing.T) {
+	m, backend, _ := testModel(t, config.Default())
+	press(m, 'j')
+	command := press(m, 'p')
+	if command == nil {
+		t.Fatal("selected refresh shortcut did not start an operation")
+	}
+	press(m, 'k')
+	m.Update(command())
+	if len(backend.refreshed) != 1 || backend.refreshed[0] != "a" || backend.refreshAll != 0 || len(backend.marked) != 0 {
+		t.Fatalf("selected refresh fetched or acknowledged the wrong PR: %+v all=%d read=%v", backend.refreshed, backend.refreshAll, backend.marked)
 	}
 }
 

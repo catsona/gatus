@@ -25,6 +25,7 @@ type Backend interface {
 	Snapshot() monitor.Snapshot
 	SetConfig(config.Config)
 	RequestRefresh()
+	RefreshPR(context.Context, string) error
 	MarkRead(string, uint64) error
 	MarkUnread(string) error
 	Rerun(context.Context, string, bool) (github.Result, error)
