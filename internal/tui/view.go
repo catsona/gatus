@@ -58,34 +58,16 @@ func (m *Model) layout() (string, []hitRegion) {
 	}
 	lines = append(lines, muted.Render(summary))
 	var regions []hitRegion
+	top, bottom, barRegions := m.controlBars()
+	bodyEnd := m.height - 1 - len(bottom)
 
 	if m.settings {
 		text := "[" + m.hint("back") + "] Back"
 		regions = append(regions, hitRegion{x: 0, y: len(lines), width: lipgloss.Width(text), action: "back"})
 		lines = append(lines, accent.Render(text))
 	} else {
-		line, x := "", 0
-		for index, action := range controls {
-			text := "[" + m.hint(action) + "] " + m.controlLabel(action)
-			text = clip(text, m.width)
-			width := lipgloss.Width(text)
-			if x > 0 && x+width+1 > m.width {
-				lines = append(lines, line)
-				line, x = "", 0
-			}
-			if x > 0 {
-				line += " "
-				x++
-			}
-			regions = append(regions, hitRegion{x: x, y: len(lines), width: width, action: action})
-			if m.focus == index {
-				line += highlight.Render(text)
-			} else {
-				line += accent.Render(text)
-			}
-			x += width
-		}
-		lines = append(lines, line)
+		lines = append(lines, top...)
+		regions = append(regions, barRegions...)
 	}
 
 	if m.edit != "" {
@@ -103,7 +85,7 @@ func (m *Model) layout() (string, []hitRegion) {
 	case m.menu != "":
 		lines = append(lines, muted.Bold(true).Render(strings.ToUpper(m.menu[:1])+m.menu[1:]))
 		options := m.menuOptions()
-		available := max(0, m.height-len(lines)-2)
+		available := max(0, bodyEnd-len(lines))
 		start := max(0, m.menuIndex-available+1)
 		for index := start; index < len(options) && index < start+available; index++ {
 			text := "  " + options[index].label
@@ -116,7 +98,7 @@ func (m *Model) layout() (string, []hitRegion) {
 
 	case m.settings:
 		lines = append(lines, muted.Bold(true).Render("Setting                         Value"))
-		available := max(0, m.height-len(lines)-2)
+		available := max(0, bodyEnd-len(lines))
 		settings := m.settingRows()
 		for index := m.settingOffset; index < len(settings) && index < m.settingOffset+available; index++ {
 			row := settings[index]
@@ -140,7 +122,7 @@ func (m *Model) layout() (string, []hitRegion) {
 			heading = append(heading, cell(column.label, column.width))
 		}
 		lines = append(lines, muted.Bold(true).Render(strings.Join(heading, " ")))
-		available := max(0, m.height-len(lines)-2)
+		available := max(0, bodyEnd-len(lines))
 		for index := m.offset; index < len(rows) && index < m.offset+available; index++ {
 			record := rows[index]
 			var values []string
@@ -190,14 +172,21 @@ func (m *Model) layout() (string, []hitRegion) {
 		}
 	}
 
-	for len(lines) < m.height-2 {
+	for len(lines) < bodyEnd {
 		lines = append(lines, "")
 	}
-	if len(lines) > m.height-2 {
-		lines = lines[:m.height-2]
+	if len(lines) > bodyEnd {
+		lines = lines[:bodyEnd]
 	}
 
 	status := m.message
+	if status == "" && !m.settings && m.menu == "" && m.edit == "" {
+		status = "Tab/←→ controls · ↑↓ select PR"
+		if m.focus >= 0 && m.focus < len(controls) {
+			action := controls[m.focus]
+			status = m.controlLabel(action) + " [" + m.hint(action) + "]"
+		}
+	}
 	if m.noticeError != "" {
 		status = "Webhook: " + m.noticeError
 	}
@@ -211,17 +200,7 @@ func (m *Model) layout() (string, []hitRegion) {
 		status = "Config changed on disk. [l] load external / [w] overwrite this field"
 	}
 	lines = append(lines, waiting.Render(clean(status)))
-	footer := fmt.Sprintf("%s web  %s copy  %s read  %s unread  %s failed CI  %s all CI  %s help  %s quit", m.hint("open"), m.hint("copy_url"), m.hint("mark_read"), m.hint("mark_unread"), m.hint("rerun_failed"), m.hint("rerun_all"), m.hint("help"), m.hint("quit"))
-	if m.settings {
-		footer = "↑↓ select · enter/space edit or toggle · esc back · changes apply immediately"
-	}
-	if m.edit != "" {
-		footer = "enter save · esc cancel"
-		if m.edit == "template" {
-			footer = "ctrl+s save · enter new line · esc cancel"
-		}
-	}
-	lines = append(lines, muted.Render(footer))
+	lines = append(lines, bottom...)
 	for index := range lines {
 		lines[index] = clip(lines[index], m.width)
 	}
@@ -351,6 +330,22 @@ func (m *Model) controlLabel(action string) string {
 		return "Refresh PR"
 	case "cancel_ci":
 		return "Cancel CI"
+	case "open":
+		return "Open PR"
+	case "copy_url":
+		return "Copy URL"
+	case "mark_read":
+		return "Read"
+	case "mark_unread":
+		return "Unread"
+	case "rerun_failed":
+		return "Rerun failed"
+	case "rerun_all":
+		return "Rerun all"
+	case "help":
+		return "Help"
+	case "quit":
+		return "Quit"
 	default:
 		return "Settings"
 	}

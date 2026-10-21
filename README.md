@@ -16,7 +16,11 @@ For a private repository, Git needs access to `git.pegasko.art`. Set `GOPRIVATE=
 
 Versioned archives for macOS ARM64, Linux ARM64 and Linux AMD64 are available in [Forgejo Releases](https://git.pegasko.art/catsona/gstatus/releases). Run `gstatus --version` to see the installed version.
 
-The main screen includes search, state filters, sorting and refresh controls. Use arrows or `j`/`k` to select a PR. Click controls or double-click a PR to open it. Press `?` for shortcuts and `,` for settings.
+The top bar controls the list: search, state filters, sorting, auto-refresh, interval and refresh all. Settings, help and quit are also at the top.
+
+The bottom bar acts on the selected PR: open, copy, mark read or unread, refresh, rerun failed or all CI jobs, and cancel CI. Both bars support mouse clicks and keyboard focus with Tab, Shift+Tab or left/right arrows. Press Enter to activate the focused button. Up/down arrows or `j`/`k` select a PR. Double-click a PR to open it.
+
+The bars wrap with the terminal width. In short terminals, buttons show their shortcuts, and the status line names the focused action. Press `?` for all shortcuts and `,` for settings.
 
 The indicator before each PR shows `…` while queued, an animated spinner while refreshing, and `·` while idle. It tracks full-list and selected-PR refreshes separately from unread marks.
 

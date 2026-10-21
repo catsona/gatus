@@ -345,7 +345,7 @@ func (m *Model) normalizeSelection() {
 		index, m.selectedID = 0, rows[0].PR.ID
 	}
 
-	page := max(1, m.height-9)
+	page := max(1, m.tablePage())
 	m.offset = max(0, min(m.offset, index))
 	if index >= m.offset+page {
 		m.offset = index - page + 1

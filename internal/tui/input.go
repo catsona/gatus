@@ -12,7 +12,11 @@ import (
 	"git.pegasko.art/catsona/gstatus/internal/github"
 )
 
-var controls = []string{"search", "filter", "sort", "toggle_auto_refresh", "refresh_interval", "refresh_selected", "refresh", "cancel_ci", "settings"}
+var (
+	globalControls = []string{"search", "filter", "sort", "toggle_auto_refresh", "refresh_interval", "refresh", "settings", "help", "quit"}
+	prControls     = []string{"open", "copy_url", "mark_read", "mark_unread", "refresh_selected", "rerun_failed", "rerun_all", "cancel_ci"}
+	controls       = append(append([]string{}, globalControls...), prControls...)
+)
 
 func (m *Model) action(key tea.KeyPressMsg) string {
 	for action, bindings := range m.cfg.Keys {
@@ -27,6 +31,8 @@ func (m *Model) action(key tea.KeyPressMsg) string {
 }
 
 func (m *Model) handleKey(key tea.KeyPressMsg) tea.Cmd {
+	defer m.normalizeSelection()
+
 	value := key.String()
 	if value == "ctrl+c" {
 		return tea.Quit
@@ -130,6 +136,8 @@ func (m *Model) handleKey(key tea.KeyPressMsg) tea.Cmd {
 
 func (m *Model) perform(action string) tea.Cmd {
 	switch action {
+	case "quit":
+		return tea.Quit
 	case "refresh":
 		m.backend.RequestRefresh()
 		m.setMessage("Refresh requested")
@@ -234,6 +242,8 @@ func (m *Model) perform(action string) tea.Cmd {
 }
 
 func (m *Model) handleClick(mouse tea.MouseClickMsg) tea.Cmd {
+	defer m.normalizeSelection()
+
 	if m.edit != "" {
 		return m.updateEditor(mouse)
 	}
