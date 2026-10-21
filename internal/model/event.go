@@ -31,4 +31,5 @@ type Delivery struct {
 	Attempts    int
 	NextAttempt time.Time
 	LastError   string
+	Failed      bool
 }

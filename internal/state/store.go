@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"slices"
 	"sort"
 	"time"
 
@@ -167,5 +168,36 @@ func (s *Store) RemoveDelivery(account model.Account, id string) error {
 		}
 
 		return queue.Delete([]byte(id))
+	})
+}
+
+// PruneDeliveries cancels disabled event types in every account's paused queue.
+func (s *Store) PruneDeliveries(enabledTypes []string) error {
+	return s.db.Update(func(tx *bolt.Tx) error {
+		root := tx.Bucket([]byte("deliveries"))
+		return root.ForEach(func(account, _ []byte) error {
+			queue := root.Bucket(account)
+			var remove [][]byte
+			if err := queue.ForEach(func(id, data []byte) error {
+				var delivery model.Delivery
+				if err := json.Unmarshal(data, &delivery); err != nil {
+					return err
+				}
+
+				if !slices.Contains(enabledTypes, delivery.Event.Type) {
+					remove = append(remove, slices.Clone(id))
+				}
+				return nil
+			}); err != nil {
+				return err
+			}
+
+			for _, id := range remove {
+				if err := queue.Delete(id); err != nil {
+					return err
+				}
+			}
+			return nil
+		})
 	})
 }
