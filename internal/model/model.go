@@ -93,15 +93,23 @@ type Review struct {
 
 // Record preserves acknowledgement separately from the current PR status.
 type Record struct {
-	PR            PR
-	Sequence      uint64
-	Seen          uint64
-	ManualUnread  bool
-	Unread        map[string]int
-	CICandidate   string
-	CICandidateAt time.Time
-	CINotified    string
-	CIInitialized bool
+	PR             PR
+	Sequence       uint64
+	Seen           uint64
+	ManualUnread   bool
+	ManualSequence uint64
+	Pending        []PendingEvent
+	Unread         map[string]int
+	CICandidate    string
+	CICandidateAt  time.Time
+	CINotified     string
+	CIInitialized  bool
+}
+
+// PendingEvent retains the acknowledgement boundary without storing message bodies.
+type PendingEvent struct {
+	Sequence uint64
+	Type     string
 }
 
 // UnreadCount returns the number of unacknowledged events, including a manual mark.
