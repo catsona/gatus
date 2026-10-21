@@ -89,6 +89,9 @@ func TestLiveAccountSwitchRejectsDelayedOldResult(t *testing.T) {
 	if snapshot := engine.Snapshot(); snapshot.Account.Login != "bob" || len(snapshot.Records) != 0 {
 		t.Fatalf("old user remained visible: %+v", snapshot)
 	}
+	if len(engine.Snapshot().RefreshStates) != 0 {
+		t.Fatal("old account refresh indicators survived account switching")
+	}
 
 	close(source.release)
 	<-finished

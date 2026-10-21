@@ -78,6 +78,7 @@ type Model struct {
 	busy                        map[string]bool
 	lastClickID                 string
 	lastClickAt                 time.Time
+	refreshFrame                int
 }
 
 type tickMsg time.Time
@@ -136,7 +137,7 @@ func (m *Model) Init() tea.Cmd {
 }
 
 func nextTick() tea.Cmd {
-	return tea.Tick(time.Second, func(now time.Time) tea.Msg { return tickMsg(now) })
+	return tea.Tick(125*time.Millisecond, func(now time.Time) tea.Msg { return tickMsg(now) })
 }
 
 func (m *Model) waitSnapshot() tea.Cmd {
@@ -222,6 +223,7 @@ func (m *Model) Update(message tea.Msg) (tea.Model, tea.Cmd) {
 		return m, m.waitNotice()
 
 	case tickMsg:
+		m.refreshFrame++
 		if time.Since(m.messageAt) > 8*time.Second {
 			m.message = ""
 		}

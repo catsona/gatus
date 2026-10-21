@@ -183,6 +183,34 @@ func TestResponsiveViewAndMouseSelection(t *testing.T) {
 	}
 }
 
+func TestRowRefreshIndicatorTracksQueueRunningAndIdle(t *testing.T) {
+	m, backend, _ := testModel(t, config.Default())
+	snapshot := backend.snapshot
+	snapshot.RefreshStates = map[string]monitor.RefreshState{"a": monitor.RefreshQueued, "b": monitor.RefreshRunning}
+	m.Update(snapshot)
+	firstCharacter := func(title string) rune {
+		t.Helper()
+		for _, line := range strings.Split(ansi.Strip(m.View().Content), "\n") {
+			if strings.Contains(line, title) {
+				return []rune(line)[0]
+			}
+		}
+		t.Fatalf("PR %s is not visible", title)
+		return 0
+	}
+	queued, running := firstCharacter("Alpha"), firstCharacter("Beta")
+	m.Update(tickMsg(time.Now()))
+	if next := firstCharacter("Beta"); next == running {
+		t.Fatal("running refresh indicator did not animate")
+	}
+	snapshot.RefreshStates = nil
+	m.Update(snapshot)
+	idle := firstCharacter("Alpha")
+	if queued == running || idle == queued || idle == running {
+		t.Fatalf("refresh phases are indistinguishable: queued=%q running=%q idle=%q", queued, running, idle)
+	}
+}
+
 func TestSettingsDetectExternalEditBeforeSaving(t *testing.T) {
 	m, _, _ := testModel(t, config.Default())
 	press(m, ',')

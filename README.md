@@ -18,6 +18,8 @@ Versioned archives for macOS ARM64, Linux ARM64 and Linux AMD64 are available in
 
 The main screen includes search, state filters, sorting and refresh controls. Use arrows or `j`/`k` to select a PR. Click controls or double-click a PR to open it. Press `?` for shortcuts and `,` for settings.
 
+The indicator before each PR shows `…` while queued, an animated spinner while refreshing, and `·` while idle. It tracks full-list and selected-PR refreshes separately from unread marks.
+
 | Key | Action |
 | --- | --- |
 | Enter / `o` | Open in the browser |

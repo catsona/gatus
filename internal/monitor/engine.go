@@ -27,14 +27,15 @@ type Source interface {
 
 // Snapshot is an immutable view of the current account and loading progress.
 type Snapshot struct {
-	Account    model.Account
-	Records    []model.Record
-	Generation uint64
-	UpdatedAt  time.Time
-	Loading    bool
-	Loaded     int
-	Total      int
-	Error      string
+	Account       model.Account
+	Records       []model.Record
+	Generation    uint64
+	UpdatedAt     time.Time
+	Loading       bool
+	Loaded        int
+	Total         int
+	Error         string
+	RefreshStates map[string]RefreshState
 }
 
 // Engine isolates account generations and commits acknowledged state with its events.
@@ -62,7 +63,8 @@ type Engine struct {
 	lastError     error
 	authError     error
 	updates       chan Snapshot
-	requests      chan struct{}
+	requests      chan *refreshJob
+	refreshJobs   map[*refreshJob]struct{}
 }
 
 // New creates an idle monitor; Run starts independent account and PR polling loops.
@@ -70,8 +72,9 @@ func New(source Source, store *state.Store, cfg config.Config) *Engine {
 	return &Engine{
 		source: source, store: store, cfg: cfg,
 		data:    model.AccountState{Records: map[string]model.Record{}},
-		updates: make(chan Snapshot, 1), requests: make(chan struct{}, 1),
-		preview: map[string]model.PR{}, sessionCtx: context.Background(),
+		updates: make(chan Snapshot, 1), requests: make(chan *refreshJob, 1),
+		refreshJobs: map[*refreshJob]struct{}{},
+		preview:     map[string]model.PR{}, sessionCtx: context.Background(),
 	}
 }
 
@@ -89,6 +92,14 @@ func (e *Engine) Snapshot() Snapshot {
 
 func (e *Engine) snapshotLocked() Snapshot {
 	result := Snapshot{Account: e.account, Generation: e.generation, UpdatedAt: e.updatedAt, Loading: e.loading, Loaded: e.loaded, Total: e.total}
+	result.RefreshStates = map[string]RefreshState{}
+	for job := range e.refreshJobs {
+		for id, state := range job.states {
+			if result.RefreshStates[id] != RefreshRunning {
+				result.RefreshStates[id] = state
+			}
+		}
+	}
 	for _, record := range e.data.Records {
 		if !inScope(record.PR.Repository, e.cfg.Repositories) {
 			continue
@@ -133,10 +144,9 @@ func (e *Engine) publishLocked() {
 
 // RequestRefresh coalesces repeated manual requests without blocking input.
 func (e *Engine) RequestRefresh() {
-	select {
-	case e.requests <- struct{}{}:
-	default:
-	}
+	e.mu.Lock()
+	defer e.mu.Unlock()
+	e.requestRefreshLocked()
 }
 
 // SetConfig replaces validated settings and cancels work for an outdated scope.
@@ -198,6 +208,11 @@ func (e *Engine) CheckAccount(ctx context.Context) error {
 		e.cancelFetch()
 	}
 	e.generation++
+	e.refreshJobs = map[*refreshJob]struct{}{}
+	select {
+	case <-e.requests:
+	default:
+	}
 	generation := e.generation
 	e.account = model.Account{}
 	e.loaded, e.total = 0, 0
@@ -234,15 +249,33 @@ func (e *Engine) CheckAccount(ctx context.Context) error {
 	e.account, e.data = account, data
 	e.lastAttempt, e.nextAllowed = time.Time{}, time.Time{}
 	e.publishLocked()
-	e.RequestRefresh()
+	e.requestRefreshLocked()
 	return nil
 }
 
 // Refresh loads a complete source generation while retaining good data on errors.
 func (e *Engine) Refresh(ctx context.Context) error {
+	e.mu.Lock()
+	var job *refreshJob
+	select {
+	case job = <-e.requests:
+	default:
+		job = e.newRefreshJobLocked()
+	}
+	e.publishLocked()
+	e.mu.Unlock()
+	return e.refresh(ctx, job)
+}
+
+func (e *Engine) refresh(ctx context.Context, job *refreshJob) error {
+	defer e.observeRefreshContext(ctx, job)()
 	e.refreshMu.Lock()
 	defer e.refreshMu.Unlock()
 	e.mu.Lock()
+	if job.generation != e.generation || ctx.Err() != nil {
+		e.mu.Unlock()
+		return context.Canceled
+	}
 	if e.account.ID == "" || e.authError != nil {
 		e.mu.Unlock()
 		return fmt.Errorf("no verified active GitHub account")
@@ -296,6 +329,10 @@ func (e *Engine) Refresh(ctx context.Context) error {
 		if generation == e.generation && fetchCtx.Err() == nil {
 			e.total = len(prs)
 			e.preview = byID
+			job.states = map[string]RefreshState{}
+			for id := range byID {
+				job.states[id] = RefreshQueued
+			}
 			e.publishLocked()
 		}
 		e.mu.Unlock()
@@ -321,8 +358,12 @@ func (e *Engine) Refresh(ctx context.Context) error {
 					if fetchCtx.Err() != nil {
 						return
 					}
+					if !e.setRefreshState(job, pr.ID, RefreshRunning) {
+						return
+					}
 
 					value, detailErr := e.source.Detail(fetchCtx, token, pr)
+					e.setRefreshState(job, pr.ID, RefreshIdle)
 					results <- result{pr: value, err: detailErr}
 				}
 			})
@@ -491,19 +532,20 @@ func (e *Engine) Run(ctx context.Context) {
 		ticker := time.NewTicker(500 * time.Millisecond)
 		defer ticker.Stop()
 		for {
-			explicit := false
+			var job *refreshJob
 			select {
 			case <-ctx.Done():
 				return
-			case <-e.requests:
-				explicit = true
+			case job = <-e.requests:
 			case <-ticker.C:
 			}
 
 			e.mu.Lock()
 			due := e.cfg.Refresh.Enabled && time.Since(e.lastAttempt) >= time.Duration(e.cfg.Refresh.Interval)
 			e.mu.Unlock()
-			if explicit || due {
+			if job != nil {
+				_ = e.refresh(ctx, job)
+			} else if due {
 				_ = e.Refresh(ctx)
 			}
 		}

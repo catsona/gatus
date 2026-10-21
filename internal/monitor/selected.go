@@ -12,8 +12,19 @@ import (
 
 // RefreshPR fetches one known PR and reconciles its events without rediscovering the list.
 func (e *Engine) RefreshPR(ctx context.Context, id string) error {
+	e.mu.Lock()
+	job := e.newRefreshJobLocked(id)
+	e.publishLocked()
+	e.mu.Unlock()
+	defer e.observeRefreshContext(ctx, job)()
 	e.refreshMu.Lock()
 	defer e.refreshMu.Unlock()
+	e.mu.Lock()
+	valid := job.generation == e.generation && ctx.Err() == nil
+	e.mu.Unlock()
+	if !valid {
+		return context.Canceled
+	}
 	token, err := e.source.Credentials(ctx)
 	if err != nil {
 		return err
@@ -43,6 +54,9 @@ func (e *Engine) RefreshPR(ctx context.Context, id string) error {
 	defer cancel()
 	e.cancelFetch = cancel
 	e.mu.Unlock()
+	if !e.setRefreshState(job, id, RefreshRunning) {
+		return context.Canceled
+	}
 
 	pr, err := e.source.Detail(fetchCtx, token, record.PR)
 	e.mu.Lock()

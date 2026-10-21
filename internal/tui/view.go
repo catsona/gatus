@@ -9,6 +9,7 @@ import (
 	tea "charm.land/bubbletea/v2"
 	"charm.land/lipgloss/v2"
 	"git.pegasko.art/catsona/gstatus/internal/model"
+	"git.pegasko.art/catsona/gstatus/internal/monitor"
 	"github.com/charmbracelet/x/ansi"
 )
 
@@ -145,6 +146,16 @@ func (m *Model) layout() (string, []hitRegion) {
 			var values []string
 			for _, column := range columns {
 				value := cell(column.value(record), column.width)
+				if column.label == "↻" {
+					style := muted
+					switch m.snapshot.RefreshStates[record.PR.ID] {
+					case monitor.RefreshQueued:
+						style = waiting
+					case monitor.RefreshRunning:
+						style = accent
+					}
+					value = style.Render(value)
+				}
 				if column.label == "CI" {
 					value = ciStyle(record.PR.CIStatus).Render(value)
 				}
@@ -225,6 +236,17 @@ type column struct {
 
 func (m *Model) columns() []column {
 	columns := []column{
+		{"↻", 1, func(record model.Record) string {
+			switch m.snapshot.RefreshStates[record.PR.ID] {
+			case monitor.RefreshQueued:
+				return "…"
+			case monitor.RefreshRunning:
+				frames := []rune("⠋⠙⠹⠸⠼⠴⠦⠧⠇⠏")
+				return string(frames[m.refreshFrame%len(frames)])
+			default:
+				return "·"
+			}
+		}},
 		{"", 2, func(record model.Record) string {
 			for _, pair := range []struct{ key, label string }{{"thread.reply", "↩"}, {"review.submitted", "R"}, {"comment.created", "C"}} {
 				if record.Unread[pair.key] > 0 {
@@ -277,7 +299,7 @@ func (m *Model) columns() []column {
 	for _, column := range columns {
 		fixed += column.width
 	}
-	columns[2].width = max(1, m.width-fixed)
+	columns[3].width = max(1, m.width-fixed)
 	return columns
 }
 
