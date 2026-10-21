@@ -4,6 +4,7 @@ import (
 	"crypto/sha256"
 	"fmt"
 	"sort"
+	"strconv"
 	"strings"
 	"time"
 
@@ -70,7 +71,7 @@ func aggregateCI(pr model.PR) (status, fingerprint, summary string) {
 
 		key := fmt.Sprintf("%s:%s:%s:%d", check.Revision, check.App, check.Name, check.RunID)
 		previous, exists := checks[key]
-		if !exists || !checkTime(check).Before(checkTime(previous)) {
+		if !exists || newerCheck(check, previous) {
 			checks[key] = check
 		}
 	}
@@ -117,6 +118,19 @@ func aggregateCI(pr model.PR) (status, fingerprint, summary string) {
 	}
 
 	return "skipped", fingerprint, ""
+}
+
+func newerCheck(check, previous model.Check) bool {
+	kind, id, found := strings.Cut(check.ID, ":")
+	previousKind, previousID, previousFound := strings.Cut(previous.ID, ":")
+	if found && previousFound && kind == previousKind && (kind == "check" || kind == "status") {
+		order, err := strconv.ParseUint(id, 10, 64)
+		previousOrder, previousErr := strconv.ParseUint(previousID, 10, 64)
+		if err == nil && previousErr == nil && order != previousOrder {
+			return order > previousOrder
+		}
+	}
+	return !checkTime(check).Before(checkTime(previous))
 }
 
 func unique(values []string) []string {

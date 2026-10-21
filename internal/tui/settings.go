@@ -129,7 +129,21 @@ func splitValues(value string) []string {
 }
 
 func (m *Model) saveEditor(force bool) {
-	cfg := m.editableConfig()
+	data, err := os.ReadFile(m.path)
+	if err != nil {
+		m.setMessage(err.Error())
+		return
+	}
+	if !force && sha256.Sum256(data) != m.editHash {
+		m.conflict = true
+		return
+	}
+
+	cfg, err := config.Parse(data)
+	if err != nil {
+		m.setMessage(err.Error())
+		return
+	}
 	value := m.input.Value()
 	switch m.edit {
 	case "search":
@@ -149,16 +163,6 @@ func (m *Model) saveEditor(force bool) {
 		cfg.Notifications.Template = m.area.Value()
 	default:
 		cfg.Keys[strings.TrimPrefix(m.edit, "key:")] = splitValues(value)
-	}
-
-	data, err := os.ReadFile(m.path)
-	if err != nil {
-		m.setMessage(err.Error())
-		return
-	}
-	if !force && sha256.Sum256(data) != m.editHash {
-		m.conflict = true
-		return
 	}
 
 	if m.saveConfig(cfg, true) {

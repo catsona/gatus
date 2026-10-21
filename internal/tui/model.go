@@ -109,8 +109,18 @@ func New(options Options) *Model {
 	m.area.ShowLineNumbers = false
 	m.area.SetWidth(72)
 	m.area.SetHeight(4)
-	data, _ := os.ReadFile(m.path)
-	m.fileHash = sha256.Sum256(data)
+	data, err := os.ReadFile(m.path)
+	if err == nil {
+		cfg, parseErr := config.Parse(data)
+		if parseErr == nil {
+			m.cfg, m.fileHash = cfg, sha256.Sum256(data)
+			if m.backend != nil {
+				m.backend.SetConfig(cfg)
+			}
+		} else {
+			m.configError = parseErr.Error()
+		}
+	}
 	if m.backend != nil {
 		m.snapshot = m.backend.Snapshot()
 	}

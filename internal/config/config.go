@@ -180,6 +180,9 @@ func (c Config) Validate() error {
 			}
 
 			canonical := CanonicalKey(key)
+			if canonical == "ctrl+c" && action != "quit" {
+				return fmt.Errorf("ctrl+c is reserved for quit")
+			}
 			if previous, exists := assigned[canonical]; exists && previous != action {
 				return fmt.Errorf("key %q is assigned to %s and %s", key, previous, action)
 			}

@@ -68,6 +68,29 @@ func templateValue(node parse.Node, dot reflect.Type, variables map[string]refle
 					result = typ
 				}
 			}
+			if function, ok := command.Args[0].(*parse.IdentifierNode); ok && function.Ident == "index" && len(command.Args) >= 3 {
+				var err error
+				result, err = templateValue(command.Args[1], dot, variables)
+				if err != nil {
+					return nil, err
+				}
+				for range command.Args[2:] {
+					if result == nil {
+						break
+					}
+					for result.Kind() == reflect.Pointer {
+						result = result.Elem()
+					}
+					switch result.Kind() {
+					case reflect.Array, reflect.Slice, reflect.Map:
+						result = result.Elem()
+					case reflect.String:
+						result = reflect.TypeFor[byte]()
+					default:
+						return nil, fmt.Errorf("cannot index %s", result)
+					}
+				}
+			}
 		}
 		for _, declaration := range node.Decl {
 			variables[declaration.Ident[0]] = result

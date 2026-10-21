@@ -15,6 +15,7 @@ func TestRejectsInvalidConfiguration(t *testing.T) {
 		"notifications:\n  events: [typo]\n",
 		"keys:\n  open: [r]\n",
 		"keys:\n  copy_url: [shift+r]\n",
+		"keys:\n  quit: [q]\n  refresh: [ctrl+c]\n",
 		"repositories: [not-a-repository]\n",
 		"version: 2\n",
 	} {
@@ -23,6 +24,19 @@ func TestRejectsInvalidConfiguration(t *testing.T) {
 				t.Fatalf("accepted invalid config: %s", input)
 			}
 		})
+	}
+}
+
+func TestTemplateFieldsThroughIndex(t *testing.T) {
+	cfg := Default()
+	cfg.Notifications.Template = `{{if .Event.Type}}{{$check := index .PR.Checks 0}}{{$check.Missing}}{{end}}`
+	if err := cfg.Validate(); err == nil {
+		t.Fatal("accepted an invalid field on an indexed check")
+	}
+
+	cfg.Notifications.Template = `{{if .Event.Type}}{{$check := index .PR.Checks 0}}{{$check.Name}}{{end}}`
+	if err := cfg.Validate(); err != nil {
+		t.Fatalf("valid indexed template rejected: %v", err)
 	}
 }
 
