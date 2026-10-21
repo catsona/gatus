@@ -152,3 +152,25 @@ func TestCancelDoesNotMutateCompletedWorkflows(t *testing.T) {
 		t.Fatal("sent a mutation for completed CI")
 	}
 }
+
+func TestCancelRejectsRevisionChangedDuringCheckLoading(t *testing.T) {
+	calls := filepath.Join(t.TempDir(), "calls")
+	changed := filepath.Join(t.TempDir(), "changed")
+	base := detailFixture(t, calls)
+	script := fmt.Sprintf(`for endpoint do :; done
+case "$endpoint" in
+'repos/acme/app/actions/runs?'*) touch '%s'; printf 'HTTP/1.1 200 OK\r\n\r\n%%s' '{"workflow_runs":[{"id":42,"workflow_id":5,"head_sha":"head","head_branch":"feature","status":"in_progress"}]}' ;;
+'repos/acme/app/pulls/7') if [ -f '%s' ]; then printf 'HTTP/1.1 200 OK\r\n\r\n%%s' '{"node_id":"PR_7","number":7,"state":"open","head":{"sha":"new-head","ref":"feature"}}'; else exec '%s' "$@"; fi ;;
+*) exec '%s' "$@" ;;
+esac
+`, changed, changed, base.Executable, base.Executable)
+	client := fixtureClient(t, script)
+
+	result, err := client.Cancel(context.Background(), "token", model.PR{Repository: "acme/app", Number: 7, HeadSHA: "head"})
+	if err == nil || result.Accepted != 0 {
+		t.Fatalf("cancelled superseded CI after a new push: %+v %v", result, err)
+	}
+	if _, err := os.Stat(calls); !os.IsNotExist(err) {
+		t.Fatal("sent a cancellation after the PR revision changed")
+	}
+}

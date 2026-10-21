@@ -307,6 +307,13 @@ func (c *Client) Cancel(ctx context.Context, token string, selected model.PR) (R
 	if err := c.loadChecks(ctx, token, &current); err != nil {
 		return Result{}, err
 	}
+	verified, err := c.basic(ctx, token, current)
+	if err != nil {
+		return Result{}, err
+	}
+	if verified.HeadSHA != current.HeadSHA || verified.MergeSHA != current.MergeSHA {
+		return Result{}, fmt.Errorf("PR revision changed while loading CI; refresh before cancelling")
+	}
 
 	latestRuns := map[string]model.Run{}
 	for _, run := range current.Runs {
