@@ -151,6 +151,9 @@ func (m *Model) layout() (string, []hitRegion) {
 				if column.label == "CI" {
 					style = style.Foreground(ciStyle(record.PR.CIStatus).GetForeground())
 				}
+				if column.label == "Branch" || column.label == "Br" {
+					style = style.Foreground(branchStyle(record.PR.BranchStatus).GetForeground())
+				}
 				if column.label == "Review" {
 					style = style.Foreground(reviewStyle(record.PR.ReviewStatus).GetForeground())
 				}
@@ -257,6 +260,11 @@ func (m *Model) columns() []column {
 		}},
 		{"CI", 9, func(record model.Record) string { return ciLabel(record.PR.CIStatus, record.PR.Complete) }},
 	}
+	branch := column{"Branch", 8, func(record model.Record) string { return branchLabel(record.PR.BranchStatus, m.width < 65) }}
+	if m.width < 65 {
+		branch.label, branch.width = "Br", 2
+	}
+	columns = append(columns, branch)
 	if m.width >= 65 {
 		columns = append(columns, column{"New", 12, newEvents})
 	}
@@ -376,6 +384,34 @@ func ciStyle(value string) lipgloss.Style {
 		return bad
 	case "pending", "running":
 		return waiting
+	default:
+		return muted
+	}
+}
+
+func branchLabel(value string, compact bool) string {
+	if compact {
+		switch value {
+		case "conflict":
+			return "!!"
+		case "ok":
+			return "ok"
+		default:
+			return "?"
+		}
+	}
+	if value == "conflict" || value == "ok" {
+		return value
+	}
+	return "unknown"
+}
+
+func branchStyle(value string) lipgloss.Style {
+	switch value {
+	case "conflict":
+		return bad
+	case "ok":
+		return good
 	default:
 		return muted
 	}

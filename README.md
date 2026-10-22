@@ -24,6 +24,8 @@ The bars wrap with the terminal width. In short terminals, buttons show their sh
 
 The indicator before each PR shows `…` while queued, an animated spinner while refreshing, and `·` while idle. It tracks full-list and selected-PR refreshes separately from unread marks.
 
+The Branch column shows merge conflicts (`conflict`), no conflicts (`ok`), or a pending result (`unknown`). Narrow terminals use `!!`, `ok` and `?`.
+
 | Key | Action |
 | --- | --- |
 | Enter / `o` | Open in the browser |

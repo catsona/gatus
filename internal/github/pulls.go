@@ -24,9 +24,10 @@ type issue struct {
 
 type pull struct {
 	issue
-	Merged bool   `json:"merged"`
-	Merge  string `json:"merge_commit_sha"`
-	Head   struct {
+	Merged    bool   `json:"merged"`
+	Merge     string `json:"merge_commit_sha"`
+	Mergeable *bool  `json:"mergeable"`
+	Head      struct {
 		SHA  string `json:"sha"`
 		Ref  string `json:"ref"`
 		Repo struct {
@@ -121,6 +122,13 @@ func (c *Client) basic(ctx context.Context, token string, pr model.PR) (model.PR
 	result.HeadRef = response.Head.Ref
 	result.HeadRepo = response.Head.Repo.Name
 	result.MergeSHA = response.Merge
+	result.BranchStatus = "unknown"
+	if response.Mergeable != nil {
+		result.BranchStatus = "conflict"
+		if *response.Mergeable {
+			result.BranchStatus = "ok"
+		}
+	}
 	if response.Merged {
 		result.State = "merged"
 	}
@@ -156,6 +164,7 @@ func (c *Client) Detail(ctx context.Context, token string, pr model.PR) (model.P
 		return model.PR{}, fmt.Errorf("PR revision changed during refresh")
 	}
 
+	result.BranchStatus = verified.BranchStatus
 	result.Complete = true
 	return result, nil
 }

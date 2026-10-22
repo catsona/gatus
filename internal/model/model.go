@@ -29,6 +29,7 @@ type PR struct {
 	HeadRef      string
 	ReviewStatus string
 	CIStatus     string
+	BranchStatus string
 	CreatedAt    time.Time
 	UpdatedAt    time.Time
 	LastCI       time.Time

@@ -55,6 +55,8 @@ Review status colors are green for approval, red for requested changes, yellow f
 
 PR state colors are green for open, red for closed, purple for merged, and gray for draft. In narrow terminals, the state prefix in the title uses the same color.
 
+The Branch column shows `conflict` in red or `ok` in green. `unknown` means GitHub has not returned a mergeability result. This status describes merge conflicts, independently of CI and review requirements. Below 65 columns, the compact Br column uses `!!`, `ok` and `?`.
+
 ## Webhook events
 
 The webhook receives a POST with `Content-Type: application/json` and one field:
@@ -91,7 +93,7 @@ Templates use Go `text/template`. The root contains `.PR`, `.Account` and `.Even
 
 | Object | Fields |
 | --- | --- |
-| `.PR` | `Url`, `Title`, `Repository`, `Number`, `State`, `Draft`, `HeadSHA`, `MergeSHA`, `CIStatus`, `ReviewStatus` |
+| `.PR` | `Url`, `Title`, `Repository`, `Number`, `State`, `Draft`, `HeadSHA`, `MergeSHA`, `CIStatus`, `ReviewStatus`, `BranchStatus` |
 | `.Account` | `Login`, `ID`, `Host` |
 | `.Event` | `Type`, `Summary`, `Url`, `Actor`, `OccurredAt`, `Field`, `Old`, `New` |
 

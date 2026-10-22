@@ -105,3 +105,52 @@ func TestSelectedRowKeepsStatusForegroundColors(t *testing.T) {
 		})
 	}
 }
+
+func TestBranchStatusIsVisibleWithoutBreakingSelection(t *testing.T) {
+	for _, width := range []int{40, 80, 160} {
+		for _, scenario := range []struct{ status, label, compact string }{
+			{"conflict", "conflict", "!!"},
+			{"ok", "ok", "ok"},
+			{"unknown", "unknown", "?"},
+			{"", "unknown", "?"},
+		} {
+			t.Run(fmt.Sprintf("%d/%s", width, scenario.status), func(t *testing.T) {
+				m, backend, _ := testModel(t, config.Default())
+				backend.snapshot.Records[1].PR.BranchStatus = scenario.status
+				m.Update(backend.snapshot)
+				m.Update(tea.WindowSizeMsg{Width: width, Height: 24})
+				view, regions := m.layout()
+				lines := uv.NewStyledString(view).Lines(ansi.GraphemeWidth)
+				label, heading := scenario.label, "Branch"
+				if width < 65 {
+					label, heading = scenario.compact, "Br"
+				}
+				plain := strings.Split(ansi.Strip(view), "\n")
+				column := -1
+				for _, line := range plain {
+					if index := strings.Index(line, heading); index >= 0 {
+						column = ansi.StringWidth(line[:index])
+						break
+					}
+				}
+				if column < 0 {
+					t.Fatal("branch status column is missing")
+				}
+				for _, region := range regions {
+					if region.action != "row" || region.id != "b" {
+						continue
+					}
+					var text strings.Builder
+					for _, cell := range lines[region.y][column:] {
+						text.WriteString(cell.Content)
+					}
+					if !strings.HasPrefix(text.String(), label) || lines[region.y][column].Style.Bg == nil {
+						t.Fatalf("selected branch status missing: %s", text.String())
+					}
+					return
+				}
+				t.Fatal("selected PR was not rendered")
+			})
+		}
+	}
+}
