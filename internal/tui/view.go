@@ -317,11 +317,12 @@ func (m *Model) controlLabel(action string) string {
 	case "filter":
 		return m.cfg.View.Filter
 	case "sort":
-		direction := "↑"
+		return m.cfg.View.Sort
+	case "sort_direction":
 		if m.cfg.View.Descending {
-			direction = "↓"
+			return "DESC"
 		}
-		return m.cfg.View.Sort + direction
+		return "ASC"
 	case "toggle_auto_refresh":
 		if m.cfg.Refresh.Enabled {
 			return "Auto:on"

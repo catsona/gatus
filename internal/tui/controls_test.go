@@ -36,6 +36,9 @@ func TestControlsStayOnTheirSideOfThePRList(t *testing.T) {
 			m, _, _ := testModel(t, cfg)
 			m.Update(tea.WindowSizeMsg{Width: size[0], Height: size[1]})
 			view, regions := m.layout()
+			if !strings.Contains(ansi.Strip(view), "DESC") {
+				t.Error("sort direction is hidden")
+			}
 			firstRow, lastRow := size[1], -1
 			for _, region := range regions {
 				if region.action == "row" {
@@ -47,7 +50,7 @@ func TestControlsStayOnTheirSideOfThePRList(t *testing.T) {
 				t.Fatalf("no PR rows fit: %s", ansi.Strip(view))
 			}
 
-			global := []string{"search", "filter", "sort", "toggle_auto_refresh", "refresh_interval", "refresh", "settings", "help", "quit"}
+			global := []string{"search", "filter", "sort", "sort_direction", "toggle_auto_refresh", "refresh_interval", "refresh", "settings", "help", "quit"}
 			selected := []string{"open", "copy_url", "mark_read", "mark_unread", "refresh_selected", "rerun_failed", "rerun_all", "cancel_ci"}
 			seen := map[string]bool{}
 			for _, region := range regions {

@@ -15,7 +15,13 @@ func (m *Model) controlBar(actions []string, y int, compact bool) ([]string, []h
 		if !compact {
 			text += " " + m.controlLabel(action)
 		} else {
-			text = clip(text, max(3, (m.width+1)/4-1))
+			limit := max(3, (m.width+1)/4-1)
+			if action == "sort_direction" {
+				label := m.controlLabel(action)
+				text = clip(text, max(1, limit-1-lipgloss.Width(label))) + " " + label
+			} else {
+				text = clip(text, limit)
+			}
 		}
 		text = clip(text, m.width)
 		width := lipgloss.Width(text)

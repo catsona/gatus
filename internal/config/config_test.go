@@ -27,6 +27,21 @@ func TestRejectsInvalidConfiguration(t *testing.T) {
 	}
 }
 
+func TestNewSortDirectionShortcutPreservesExistingBindings(t *testing.T) {
+	for _, binding := range []string{"S", "shift+s"} {
+		cfg, err := Parse([]byte("keys:\n  sort: [" + binding + "]\n"))
+		if err != nil {
+			t.Fatalf("existing config no longer loads: %v", err)
+		}
+		if len(cfg.Keys["sort_direction"]) != 0 || len(cfg.Keys["sort"]) != 1 || cfg.Keys["sort"][0] != binding {
+			t.Fatalf("existing shortcut was replaced: %+v", cfg.Keys)
+		}
+	}
+	if _, err := Parse([]byte("keys:\n  sort: [S]\n  sort_direction: [S]\n")); err == nil {
+		t.Fatal("explicit duplicate bindings were accepted")
+	}
+}
+
 func TestTemplateFieldsThroughIndex(t *testing.T) {
 	cfg := Default()
 	cfg.Notifications.Template = `{{if .Event.Type}}{{$check := index .PR.Checks 0}}{{$check.Missing}}{{end}}`

@@ -91,7 +91,8 @@ func Default() Config {
 			"refresh": {"r"}, "toggle_auto_refresh": {"a"}, "refresh_interval": {"i"},
 			"refresh_selected": {"p"},
 			"search":           {"/"}, "filter": {"f"}, "sort": {"s"},
-			"rerun_all": {"ctrl+r"}, "rerun_failed": {"R"},
+			"sort_direction": {"S"},
+			"rerun_all":      {"ctrl+r"}, "rerun_failed": {"R"},
 			"cancel_ci": {"x"},
 			"settings":  {","}, "help": {"?"}, "back": {"esc"}, "quit": {"q", "ctrl+c"},
 		},
@@ -110,6 +111,21 @@ func Parse(data []byte) (Config, error) {
 	var extra any
 	if err := decoder.Decode(&extra); err != io.EOF {
 		return Config{}, fmt.Errorf("config must contain one YAML document")
+	}
+
+	var supplied struct {
+		Keys map[string][]string `yaml:"keys"`
+	}
+	if err := yaml.Unmarshal(data, &supplied); err != nil {
+		return Config{}, fmt.Errorf("parse hotkeys: %w", err)
+	}
+	if _, explicit := supplied.Keys["sort_direction"]; !explicit {
+		for _, bindings := range supplied.Keys {
+			if slices.ContainsFunc(bindings, func(key string) bool { return CanonicalKey(key) == "S" }) {
+				cfg.Keys["sort_direction"] = []string{}
+				break
+			}
+		}
 	}
 
 	if err := cfg.Validate(); err != nil {

@@ -45,6 +45,10 @@ notifications:
 
 `view.sort` accepts `created`, `updated`, `ci`, `review` and `message`. Message time includes issue comments and review-thread comments. Unknown times sort last. Search matches repository, PR number and title locally.
 
+`view.descending` selects DESC when `true` and ASC when `false`. Use the direction button beside the sort field or press `S` to switch. The direction applies to every sort field and is saved immediately. Unknown timestamps stay last in both directions.
+
+If an existing config assigns `S` to another action, the direction button remains available and its new default shortcut stays unbound. Explicit duplicate bindings still reject the config.
+
 `read.mark_on_open` acknowledges displayed events after the browser command succeeds. Events arriving during that command stay unread. Copying never acknowledges events.
 
 Review status colors are green for approval, red for requested changes, yellow for comments, and gray when no review verdict is available. Colors remain visible on read PRs and the selected row.
@@ -122,6 +126,7 @@ keys:
   search: [/]
   filter: [f]
   sort: [s]
+  sort_direction: [S]
   rerun_all: [ctrl+r]
   rerun_failed: [R]
   cancel_ci: [x]

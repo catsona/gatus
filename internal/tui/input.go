@@ -13,7 +13,7 @@ import (
 )
 
 var (
-	globalControls = []string{"search", "filter", "sort", "toggle_auto_refresh", "refresh_interval", "refresh", "settings", "help", "quit"}
+	globalControls = []string{"search", "filter", "sort", "sort_direction", "toggle_auto_refresh", "refresh_interval", "refresh", "settings", "help", "quit"}
 	prControls     = []string{"open", "copy_url", "mark_read", "mark_unread", "refresh_selected", "rerun_failed", "rerun_all", "cancel_ci"}
 	controls       = append(append([]string{}, globalControls...), prControls...)
 )
@@ -145,6 +145,10 @@ func (m *Model) perform(action string) tea.Cmd {
 		return m.startEditor("search", m.cfg.View.Search)
 	case "refresh_interval":
 		return m.startEditor("interval", time.Duration(m.cfg.Refresh.Interval).String())
+	case "sort_direction":
+		cfg := m.cfg
+		cfg.View.Descending = !cfg.View.Descending
+		m.saveConfig(cfg, false)
 	case "filter", "sort", "help":
 		m.menu, m.menuIndex = action, 0
 		current := m.cfg.View.Filter
@@ -290,7 +294,7 @@ func (m *Model) menuOptions() []menuOption {
 		return []menuOption{{"created", "Created"}, {"updated", "PR updated"}, {"ci", "Last CI"}, {"review", "Last review"}, {"message", "Last message"}, {"reverse", "Reverse order"}}
 	default:
 		var result []menuOption
-		for _, action := range []string{"open", "copy_url", "mark_read", "mark_unread", "rerun_all", "rerun_failed", "cancel_ci", "search", "filter", "sort", "refresh_selected", "refresh", "toggle_auto_refresh", "refresh_interval", "settings", "quit"} {
+		for _, action := range []string{"open", "copy_url", "mark_read", "mark_unread", "rerun_all", "rerun_failed", "cancel_ci", "search", "filter", "sort", "sort_direction", "refresh_selected", "refresh", "toggle_auto_refresh", "refresh_interval", "settings", "quit"} {
 			result = append(result, menuOption{value: action, label: strings.Join(m.cfg.Keys[action], ", ") + "  " + actionLabel(action)})
 		}
 		return result

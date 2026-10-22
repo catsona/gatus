@@ -292,6 +292,63 @@ func TestOpeningMenuKeepsTheCurrentFilter(t *testing.T) {
 	}
 }
 
+func TestSortDirectionShortcutAndButtonPersistTheOrder(t *testing.T) {
+	m, _, _ := testModel(t, config.Default())
+	selected := m.selectedID
+	press(m, 'S')
+	rows := m.visible()
+	if len(rows) != 2 || rows[0].PR.ID != "a" || rows[1].PR.ID != "b" || m.selectedID != selected {
+		t.Fatalf("ascending order or selection: %+v selected=%s", rows, m.selectedID)
+	}
+	loaded, err := config.Load(m.path)
+	if err != nil || loaded.View.Descending {
+		t.Fatalf("ascending direction was not saved: %+v %v", loaded.View, err)
+	}
+
+	view, regions := m.layout()
+	if !strings.Contains(ansi.Strip(view), "ASC") {
+		t.Fatal("ascending direction is not visible")
+	}
+	clicked := false
+	for _, region := range regions {
+		if region.action == "sort_direction" {
+			m.Update(tea.MouseClickMsg{X: region.x, Y: region.y, Button: tea.MouseLeft})
+			clicked = true
+			break
+		}
+	}
+	rows = m.visible()
+	loaded, err = config.Load(m.path)
+	if !clicked || err != nil || !loaded.View.Descending || rows[0].PR.ID != "b" || m.selectedID != selected {
+		t.Fatalf("descending order or persistence: clicked=%t cfg=%+v err=%v", clicked, loaded.View, err)
+	}
+	if !strings.Contains(ansi.Strip(m.View().Content), "DESC") {
+		t.Fatal("descending direction is not visible")
+	}
+	m.Update(tea.WindowSizeMsg{Width: 40, Height: 10})
+	press(m, 'S')
+	if !strings.Contains(ansi.Strip(m.View().Content), "ASC") {
+		t.Fatal("compact controls hide the ascending direction")
+	}
+}
+
+func TestSortDirectionLeavesUnknownTimestampsLast(t *testing.T) {
+	cfg := config.Default()
+	cfg.View.Sort = "ci"
+	m, backend, _ := testModel(t, cfg)
+	backend.snapshot.Records[0].PR.LastCI = time.Unix(1, 0)
+	backend.snapshot.Records[1].PR.LastCI = time.Unix(2, 0)
+	backend.snapshot.Records = append(backend.snapshot.Records, model.Record{PR: model.PR{ID: "unknown", State: "open"}})
+	m.Update(backend.snapshot)
+	for _, want := range []string{"b", "a"} {
+		rows := m.visible()
+		if len(rows) != 3 || rows[0].PR.ID != want || rows[2].PR.ID != "unknown" {
+			t.Fatalf("wrong timestamp order: %+v", rows)
+		}
+		press(m, 'S')
+	}
+}
+
 func TestBrowserObeysDisabledAcknowledgement(t *testing.T) {
 	cfg := config.Default()
 	cfg.Read.MarkOnOpen = false

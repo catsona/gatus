@@ -32,6 +32,7 @@ The indicator before each PR shows `…` while queued, an animated spinner while
 | `r` / `a` / `i` | Refresh / toggle auto-refresh / change interval |
 | `p` | Refresh only the selected PR |
 | `/` / `f` / `s` | Search / filter / sort |
+| `S` | Switch sort direction between ASC and DESC |
 | `R` / Ctrl+R | Rerun failed jobs / all jobs |
 | `x` | Cancel active CI for the selected PR |
 | `q` | Quit |
