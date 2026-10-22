@@ -26,6 +26,8 @@ The indicator before each PR shows `…` while queued, an animated spinner while
 
 The Branch column shows merge conflicts (`conflict`), no conflicts (`ok`), or a pending result (`unknown`). Narrow terminals use `!!`, `ok` and `?`.
 
+The state filter limits which PRs are monitored and refreshed. Text search only hides rows. Read marks survive state filter changes.
+
 | Key | Action |
 | --- | --- |
 | Enter / `o` | Open in the browser |

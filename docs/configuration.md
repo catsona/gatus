@@ -41,7 +41,9 @@ notifications:
 
 `refresh_selected` updates only the selected PR's CI, reviews and comments. It does not rediscover the list or fetch other PRs, and it preserves read marks. The action works with auto-refresh disabled. `refresh` still refreshes the full list.
 
-`view.filter` accepts `all`, `open`, `closed`, `draft` and `merged`. `open` includes drafts. `closed` excludes merged PRs. Historical PRs load when the selected filter needs them.
+`view.filter` accepts `all`, `open`, `closed`, `draft` and `merged`. `open` includes drafts. `closed` excludes merged PRs. The filter limits discovery and monitoring, including manual and automatic refreshes. PRs outside it do not count as monitored or enter the refresh queue. Historical PRs load when the selected filter needs them.
+
+When an observed PR leaves the filter, gstatus records its final state transition and stops polling it. This includes closed PRs that reopen. Cached read marks remain available when you select that state again. Text search only hides rows and does not change monitoring.
 
 `view.sort` accepts `created`, `updated`, `ci`, `review` and `message`. Message time includes issue comments and review-thread comments. Unknown times sort last. Search matches repository, PR number and title locally.
 

@@ -54,7 +54,13 @@ func (c *Client) List(ctx context.Context, token, login string, repositories []s
 		query += " repo:" + repository
 	}
 
-	return c.search(ctx, token, query, time.Unix(0, 0).UTC(), time.Now().UTC().Add(24*time.Hour))
+	prs, err := c.search(ctx, token, query, time.Unix(0, 0).UTC(), time.Now().UTC().Add(24*time.Hour))
+	if filter == "merged" {
+		for index := range prs {
+			prs[index].State = "merged"
+		}
+	}
+	return prs, err
 }
 
 func (c *Client) search(ctx context.Context, token, query string, from, to time.Time) ([]model.PR, error) {
@@ -165,6 +171,7 @@ func (c *Client) Detail(ctx context.Context, token string, pr model.PR) (model.P
 	}
 
 	result.BranchStatus = verified.BranchStatus
+	result.State, result.Draft = verified.State, verified.Draft
 	result.Complete = true
 	return result, nil
 }

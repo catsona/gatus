@@ -58,6 +58,17 @@ func TestSearchPaginatesAllResults(t *testing.T) {
 	}
 }
 
+func TestMergedSearchUsesMergedStateForMonitoring(t *testing.T) {
+	client := fixtureClient(t, `case "$*" in
+  *is%3Amerged*) printf 'HTTP/1.1 200 OK\r\n\r\n{"total_count":1,"items":[{"node_id":"PR_7","number":7,"state":"closed","repository_url":"https://api.github.com/repos/acme/app"}]}' ;;
+  *) exit 1 ;;
+esac`)
+	prs, err := client.List(context.Background(), "token", "alice", nil, "merged")
+	if err != nil || len(prs) != 1 || prs[0].State != "merged" {
+		t.Fatalf("merged query result cannot match its filter: %+v %v", prs, err)
+	}
+}
+
 func TestConditionalRequestsReuseOnlyMatchingAccountCache(t *testing.T) {
 	client := fixtureClient(t, `case "$*" in
   *If-None-Match*) printf 'HTTP/1.1 304 Not Modified\r\n\r\n' ;;

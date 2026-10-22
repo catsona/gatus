@@ -286,8 +286,7 @@ func (m *Model) visible() []model.Record {
 	var rows []model.Record
 	for _, record := range m.snapshot.Records {
 		pr := record.PR
-		match := m.cfg.View.Filter == "all" || pr.State == m.cfg.View.Filter || (m.cfg.View.Filter == "draft" && pr.State == "open" && pr.Draft)
-		if !match {
+		if !pr.MatchesState(m.cfg.View.Filter) {
 			continue
 		}
 

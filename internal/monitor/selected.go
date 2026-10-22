@@ -37,7 +37,7 @@ func (e *Engine) RefreshPR(ctx context.Context, id string) error {
 		return fmt.Errorf("active account changed; select the PR again")
 	}
 	record, exists := e.data.Records[id]
-	if !exists || !inScope(record.PR.Repository, e.cfg.Repositories) {
+	if !exists || !monitored(record.PR, e.cfg) {
 		e.mu.Unlock()
 		return fmt.Errorf("PR is not loaded in the current scope")
 	}

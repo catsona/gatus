@@ -93,15 +93,8 @@ func (e *Engine) Snapshot() Snapshot {
 func (e *Engine) snapshotLocked() Snapshot {
 	result := Snapshot{Account: e.account, Generation: e.generation, UpdatedAt: e.updatedAt, Loading: e.loading, Loaded: e.loaded, Total: e.total}
 	result.RefreshStates = map[string]RefreshState{}
-	for job := range e.refreshJobs {
-		for id, state := range job.states {
-			if result.RefreshStates[id] != RefreshRunning {
-				result.RefreshStates[id] = state
-			}
-		}
-	}
 	for _, record := range e.data.Records {
-		if !inScope(record.PR.Repository, e.cfg.Repositories) {
+		if !monitored(record.PR, e.cfg) {
 			continue
 		}
 
@@ -111,8 +104,19 @@ func (e *Engine) snapshotLocked() Snapshot {
 	}
 
 	for id, pr := range e.preview {
-		if _, exists := e.data.Records[id]; !exists {
+		if _, exists := e.data.Records[id]; !exists && monitored(pr, e.cfg) {
 			result.Records = append(result.Records, model.Record{PR: pr})
+		}
+	}
+	visibleIDs := map[string]bool{}
+	for _, record := range result.Records {
+		visibleIDs[record.PR.ID] = true
+	}
+	for job := range e.refreshJobs {
+		for id, state := range job.states {
+			if visibleIDs[id] && result.RefreshStates[id] != RefreshRunning {
+				result.RefreshStates[id] = state
+			}
 		}
 	}
 
@@ -154,15 +158,20 @@ func (e *Engine) SetConfig(cfg config.Config) {
 	e.mu.Lock()
 	changed := !slices.Equal(e.cfg.Repositories, cfg.Repositories) || e.cfg.View.Filter != cfg.View.Filter
 	e.cfg = cfg
-	if changed && e.cancelFetch != nil {
-		e.cancelFetch()
+	if changed {
+		if e.cancelFetch != nil {
+			e.cancelFetch()
+		}
+		e.preview = map[string]model.PR{}
+		select {
+		case job := <-e.requests:
+			delete(e.refreshJobs, job)
+		default:
+		}
+		e.requestRefreshLocked()
 	}
 	e.publishLocked()
 	e.mu.Unlock()
-
-	if changed {
-		e.RequestRefresh()
-	}
 }
 
 // Session returns delivery settings and a context cancelled when the account changes.
@@ -298,12 +307,7 @@ func (e *Engine) refresh(ctx context.Context, job *refreshJob) error {
 	e.publishLocked()
 	e.mu.Unlock()
 
-	prs, err := e.source.List(fetchCtx, token, account.Login, cfg.Repositories, "open")
-	if err == nil && cfg.View.Filter != "open" && cfg.View.Filter != "draft" {
-		var history []model.PR
-		history, err = e.source.List(fetchCtx, token, account.Login, cfg.Repositories, cfg.View.Filter)
-		prs = append(prs, history...)
-	}
+	prs, err := e.source.List(fetchCtx, token, account.Login, cfg.Repositories, cfg.View.Filter)
 
 	if err == nil {
 		e.mu.Lock()
@@ -313,10 +317,12 @@ func (e *Engine) refresh(ctx context.Context, job *refreshJob) error {
 		}
 		byID := map[string]model.PR{}
 		for _, pr := range prs {
-			byID[pr.ID] = pr
+			if monitored(pr, cfg) {
+				byID[pr.ID] = pr
+			}
 		}
 		for id, record := range e.data.Records {
-			if record.PR.State == "open" && inScope(record.PR.Repository, cfg.Repositories) {
+			if monitored(record.PR, cfg) {
 				if _, exists := byID[id]; !exists {
 					byID[id] = record.PR
 				}
@@ -491,8 +497,12 @@ func (e *Engine) ciAction(ctx context.Context, id string, action func(context.Co
 	}
 
 	record, exists := e.data.Records[id]
+	eligible := exists && monitored(record.PR, e.cfg)
 	sessionCtx, generation := e.sessionCtx, e.generation
 	e.mu.Unlock()
+	if !eligible {
+		return github.Result{}, fmt.Errorf("PR is not monitored in the current scope")
+	}
 	if !exists || !record.PR.Complete {
 		return github.Result{}, fmt.Errorf("PR is not fully loaded")
 	}

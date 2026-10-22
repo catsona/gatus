@@ -37,3 +37,13 @@ func TestDetailUsesBranchStatusFromFinalRevisionCheck(t *testing.T) {
 		t.Fatalf("final branch status=%q, error=%v", pr.BranchStatus, err)
 	}
 }
+
+func TestDetailUsesStateFromFinalRevisionCheck(t *testing.T) {
+	base := detailFixture(t, filepath.Join(t.TempDir(), "calls"))
+	flag := filepath.Join(t.TempDir(), "requested")
+	client := fixtureClient(t, "for endpoint do :; done\ncase \"$endpoint\" in 'repos/acme/app/pulls/7') state=open; merged=false; draft=true; if [ -f '"+flag+"' ]; then state=closed; merged=true; draft=false; fi; touch '"+flag+"'; printf 'HTTP/1.1 200 OK\\r\\n\\r\\n{\"node_id\":\"PR_7\",\"number\":7,\"state\":\"%s\",\"merged\":%s,\"draft\":%s,\"head\":{\"sha\":\"head\"}}' \"$state\" \"$merged\" \"$draft\" ;; *) exec '"+base.Executable+"' \"$@\" ;; esac\n")
+	pr, err := client.Detail(context.Background(), "token", model.PR{Repository: "acme/app", Number: 7})
+	if err != nil || pr.State != "merged" || pr.Draft {
+		t.Fatalf("final PR state=%q draft=%t, error=%v", pr.State, pr.Draft, err)
+	}
+}

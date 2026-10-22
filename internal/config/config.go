@@ -50,7 +50,7 @@ type Refresh struct {
 	Interval Duration `yaml:"interval"`
 }
 
-// View controls the main screen without restricting background monitoring.
+// View selects monitored PR states and the local search and sort settings.
 type View struct {
 	Filter     string `yaml:"filter"`
 	Sort       string `yaml:"sort"`

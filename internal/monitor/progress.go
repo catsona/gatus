@@ -20,7 +20,7 @@ func (e *Engine) newRefreshJobLocked(ids ...string) *refreshJob {
 	job := &refreshJob{generation: e.generation, states: map[string]RefreshState{}}
 	if len(ids) == 0 {
 		for id, record := range e.data.Records {
-			if inScope(record.PR.Repository, e.cfg.Repositories) && (record.PR.State == "open" || e.cfg.View.Filter == "all" || record.PR.State == e.cfg.View.Filter) {
+			if monitored(record.PR, e.cfg) {
 				job.states[id] = RefreshQueued
 			}
 		}

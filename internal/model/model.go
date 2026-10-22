@@ -42,6 +42,11 @@ type PR struct {
 	Reviews      []Review
 }
 
+// MatchesState accepts open drafts and keeps closed unmerged PRs separate from merged PRs.
+func (p PR) MatchesState(filter string) bool {
+	return filter == "all" || p.State == filter || filter == "draft" && p.State == "open" && p.Draft
+}
+
 // Check describes the latest observed execution of a check or status context.
 type Check struct {
 	ID          string
