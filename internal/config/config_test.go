@@ -93,6 +93,26 @@ func TestHerdrEnabledRequiresRoot(t *testing.T) {
 	}
 }
 
+func TestHerdrSpaceActionsUseSeparateDefaults(t *testing.T) {
+	cfg := Default()
+	if len(cfg.Keys["open_herdr"]) != 1 || cfg.Keys["open_herdr"][0] != "e" {
+		t.Fatalf("open Herdr shortcut = %v", cfg.Keys["open_herdr"])
+	}
+	if len(cfg.Keys["create_herdr"]) != 1 || cfg.Keys["create_herdr"][0] != "shift+e" {
+		t.Fatalf("create Herdr shortcut = %v", cfg.Keys["create_herdr"])
+	}
+
+	parsed, err := Parse([]byte("keys:\n  create_herdr: [shift+e]\n"))
+	if err != nil || len(parsed.Keys["create_herdr"]) != 1 {
+		t.Fatalf("create Herdr shortcut did not round-trip: %+v %v", parsed.Keys, err)
+	}
+
+	parsed, err = Parse([]byte("keys:\n  open: [E]\n"))
+	if err != nil || len(parsed.Keys["create_herdr"]) != 0 {
+		t.Fatalf("existing uppercase E binding was not preserved: %+v %v", parsed.Keys, err)
+	}
+}
+
 func TestEmptyOverridesAndAtomicSave(t *testing.T) {
 	cfg, err := Parse([]byte("repositories: []\nnotifications:\n  events: []\nkeys:\n  open: []\n"))
 	if err != nil {

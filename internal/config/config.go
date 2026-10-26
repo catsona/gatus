@@ -96,8 +96,8 @@ func Default() Config {
 			"up": {"up", "k"}, "down": {"down", "j"},
 			"focus_next": {"tab"}, "focus_previous": {"shift+tab"},
 			"open": {"enter", "o"}, "copy_url": {"y"},
-			"open_herdr": {"e"},
-			"mark_read":  {"m"}, "mark_unread": {"u"},
+			"open_herdr": {"e"}, "create_herdr": {"shift+e"},
+			"mark_read": {"m"}, "mark_unread": {"u"},
 			"refresh": {"r"}, "toggle_auto_refresh": {"a"}, "refresh_interval": {"i"},
 			"refresh_selected": {"p"},
 			"search":           {"/"}, "filter": {"f"}, "sort": {"s"},
@@ -141,6 +141,14 @@ func Parse(data []byte) (Config, error) {
 		for action, bindings := range supplied.Keys {
 			if action != "open_herdr" && slices.ContainsFunc(bindings, func(key string) bool { return CanonicalKey(key) == "e" }) {
 				cfg.Keys["open_herdr"] = []string{}
+				break
+			}
+		}
+	}
+	if _, explicit := supplied.Keys["create_herdr"]; !explicit {
+		for action, bindings := range supplied.Keys {
+			if action != "create_herdr" && slices.ContainsFunc(bindings, func(key string) bool { return CanonicalKey(key) == "E" }) {
+				cfg.Keys["create_herdr"] = []string{}
 				break
 			}
 		}

@@ -347,7 +347,9 @@ func (m *Model) controlLabel(action string) string {
 	case "open":
 		return "Open PR"
 	case "open_herdr":
-		return "Open Herdr"
+		return "Attach Herdr"
+	case "create_herdr":
+		return "New Herdr"
 	case "copy_url":
 		return "Copy URL"
 	case "mark_read":

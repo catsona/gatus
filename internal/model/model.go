@@ -9,6 +9,14 @@ type Account struct {
 	Host  string
 }
 
+// HerdrLink associates a pull request URL with a stable Herdr workspace ID.
+type HerdrLink struct {
+	PRURL       string `json:"pr_url"`
+	WorkspaceID string `json:"workspace_id"`
+	Label       string `json:"label"`
+	Root        string `json:"root"`
+}
+
 // Key returns the persistent namespace shared by all sessions of this account.
 func (a Account) Key() string {
 	return a.Host + "/" + a.ID

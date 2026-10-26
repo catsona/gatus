@@ -9,6 +9,7 @@ import (
 
 	tea "charm.land/bubbletea/v2"
 	"git.pegasko.art/catsona/gstatus/internal/config"
+	"git.pegasko.art/catsona/gstatus/internal/herdr"
 	"git.pegasko.art/catsona/gstatus/internal/model"
 	"github.com/charmbracelet/x/ansi"
 )
@@ -53,7 +54,7 @@ func TestControlsStayOnTheirSideOfThePRList(t *testing.T) {
 			global := []string{"search", "filter", "sort", "sort_direction", "toggle_auto_refresh", "refresh_interval", "refresh", "settings", "help", "quit"}
 			selected := []string{"open", "copy_url", "mark_read", "mark_unread", "refresh_selected", "rerun_failed", "rerun_all", "cancel_ci"}
 			if cfg.Herdr.Enabled {
-				selected = append(selected[:1], append([]string{"open_herdr"}, selected[1:]...)...)
+				selected = append(selected[:1], append([]string{"open_herdr", "create_herdr"}, selected[1:]...)...)
 			}
 			seen := map[string]bool{}
 			for _, region := range regions {
@@ -81,8 +82,9 @@ func TestEnabledHerdrControlUsesTheSelectedPR(t *testing.T) {
 	cfg := config.Default()
 	cfg.Herdr.Enabled = true
 	m, _, _ := testModel(t, cfg)
-	opener := &herdrFixture{}
-	m.herdr = opener
+	service := &herdrFixture{spaces: []herdr.Workspace{{ID: "space-2", Label: "Shared", Root: "/work/shared"}}}
+	m.herdr = service
+	m.links = &herdrLinksFixture{links: map[string]model.HerdrLink{}}
 	_, regions := m.layout()
 	region := slices.IndexFunc(regions, func(region hitRegion) bool { return region.action == "open_herdr" })
 	if region < 0 {
@@ -93,8 +95,13 @@ func TestEnabledHerdrControlUsesTheSelectedPR(t *testing.T) {
 		t.Fatal("Herdr control did not start an operation")
 	}
 	m.Update(command())
-	if len(opener.requests) != 1 || opener.requests[0].PRKey != "https://github.com/acme/app/pull/2" {
-		t.Fatalf("Herdr mouse request = %+v", opener.requests)
+	if m.menu != "herdr" {
+		t.Fatalf("Herdr mouse menu = %q", m.menu)
+	}
+	command = press(m, tea.KeyEnter)
+	m.Update(command())
+	if !slices.Equal(service.focused, []string{"space-2"}) {
+		t.Fatalf("Herdr mouse focus = %+v", service.focused)
 	}
 }
 

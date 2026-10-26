@@ -3,6 +3,7 @@ package tui
 import (
 	"context"
 	"crypto/sha256"
+	"errors"
 	"os"
 	"path/filepath"
 	"strings"
@@ -81,12 +82,48 @@ func (d *desktopFixture) Copy(_ context.Context, value string) error {
 
 type herdrFixture struct {
 	requests []herdr.Request
+	created  []herdr.Request
+	focused  []string
+	spaces   []herdr.Workspace
 	err      error
+	focusErr error
 }
 
-func (h *herdrFixture) Open(_ context.Context, request herdr.Request) error {
+func (h *herdrFixture) List(context.Context) ([]herdr.Workspace, error) {
+	return h.spaces, h.err
+}
+
+func (h *herdrFixture) Focus(_ context.Context, id string) error {
+	h.focused = append(h.focused, id)
+	return h.focusErr
+}
+
+func (h *herdrFixture) Create(_ context.Context, request herdr.Request) (herdr.Workspace, error) {
 	h.requests = append(h.requests, request)
-	return h.err
+	h.created = append(h.created, request)
+	if h.err != nil {
+		return herdr.Workspace{}, h.err
+	}
+	return herdr.Workspace{ID: "new-space", Label: request.Label, Root: request.Root}, nil
+}
+
+type herdrLinksFixture struct {
+	links map[string]model.HerdrLink
+}
+
+func (h *herdrLinksFixture) HerdrLink(prURL string) (model.HerdrLink, bool, error) {
+	link, ok := h.links[prURL]
+	return link, ok, nil
+}
+
+func (h *herdrLinksFixture) SaveHerdrLink(link model.HerdrLink) error {
+	h.links[link.PRURL] = link
+	return nil
+}
+
+func (h *herdrLinksFixture) RemoveHerdrLink(prURL string) error {
+	delete(h.links, prURL)
+	return nil
 }
 
 func testModel(t *testing.T, cfg config.Config) (*Model, *backendFixture, *desktopFixture) {
@@ -279,7 +316,7 @@ func TestCancelCapturesSelectedPRAndPreventsDuplicateRequests(t *testing.T) {
 	}
 }
 
-func TestOpeningHerdrUsesSelectedPRAndConfiguredRoot(t *testing.T) {
+func TestOpeningHerdrListsAndFocusesSelectedSpace(t *testing.T) {
 	cfg := config.Default()
 	cfg.Herdr.Enabled = true
 	cfg.Herdr.Root = "/tmp/herdr-root"
@@ -287,8 +324,9 @@ func TestOpeningHerdrUsesSelectedPRAndConfiguredRoot(t *testing.T) {
 	m.snapshot.Records[0].PR.Repository = "acme/app"
 	m.snapshot.Records[0].PR.Number = 1
 	m.Update(m.snapshot)
-	opener := &herdrFixture{}
-	m.herdr = opener
+	service := &herdrFixture{spaces: []herdr.Workspace{{ID: "space-1", Label: "Shared", Root: "/work/shared"}}}
+	links := &herdrLinksFixture{links: map[string]model.HerdrLink{}}
+	m.herdr, m.links = service, links
 
 	press(m, 'j')
 	command := press(m, 'e')
@@ -296,26 +334,80 @@ func TestOpeningHerdrUsesSelectedPRAndConfiguredRoot(t *testing.T) {
 		t.Fatal("Herdr shortcut did not start an operation")
 	}
 	m.Update(command())
-
-	if len(opener.requests) != 1 {
-		t.Fatalf("Herdr requests = %+v", opener.requests)
+	if m.menu != "herdr" || len(m.herdrSpaces) != 1 {
+		t.Fatalf("Herdr list was not opened: menu=%q spaces=%+v", m.menu, m.herdrSpaces)
 	}
-	want := herdr.Request{Root: "/tmp/herdr-root", Label: "PR #1 - acme/app", PRKey: "https://github.com/acme/app/pull/1"}
-	if opener.requests[0] != want {
-		t.Fatalf("Herdr request = %+v, want %+v", opener.requests[0], want)
+	command = press(m, tea.KeyEnter)
+	if command == nil {
+		t.Fatal("Herdr selection did not start focus")
+	}
+	m.Update(command())
+
+	if len(service.focused) != 1 || service.focused[0] != "space-1" {
+		t.Fatalf("Herdr focus requests = %+v", service.focused)
+	}
+	if links.links["https://github.com/acme/app/pull/1"].WorkspaceID != "space-1" {
+		t.Fatalf("Herdr link = %+v", links.links)
+	}
+}
+
+func TestCreatingHerdrSpaceLinksSelectedPR(t *testing.T) {
+	cfg := config.Default()
+	cfg.Herdr.Enabled = true
+	cfg.Herdr.Root = "/tmp/herdr-root"
+	m, _, _ := testModel(t, cfg)
+	service := &herdrFixture{}
+	links := &herdrLinksFixture{links: map[string]model.HerdrLink{}}
+	m.herdr, m.links = service, links
+
+	command := press(m, 'E')
+	if command == nil {
+		t.Fatal("shift+e did not start Herdr create")
+	}
+	m.Update(command())
+
+	if len(service.created) != 1 || links.links["https://github.com/acme/app/pull/2"].WorkspaceID != "new-space" {
+		t.Fatalf("created=%+v links=%+v", service.created, links.links)
+	}
+}
+
+func TestFailedHerdrFocusKeepsThePreviousLink(t *testing.T) {
+	cfg := config.Default()
+	cfg.Herdr.Enabled = true
+	m, _, _ := testModel(t, cfg)
+	service := &herdrFixture{spaces: []herdr.Workspace{{ID: "space-2", Label: "Replacement"}}, focusErr: errors.New("focus failed")}
+	links := &herdrLinksFixture{links: map[string]model.HerdrLink{
+		"https://github.com/acme/app/pull/2": {PRURL: "https://github.com/acme/app/pull/2", WorkspaceID: "space-1"},
+	}}
+	m.herdr, m.links = service, links
+
+	if command := press(m, 'e'); command == nil {
+		t.Fatal("Herdr attach did not start")
+	} else {
+		m.Update(command())
+	}
+	command := press(m, tea.KeyEnter)
+	if command == nil {
+		t.Fatal("Herdr focus did not start")
+	}
+	m.Update(command())
+
+	if links.links["https://github.com/acme/app/pull/2"].WorkspaceID != "space-1" {
+		t.Fatalf("failed focus replaced link: %+v", links.links)
 	}
 }
 
 func TestDisabledHerdrShortcutDoesNotInvokeTheClient(t *testing.T) {
 	m, _, _ := testModel(t, config.Default())
-	opener := &herdrFixture{}
-	m.herdr = opener
+	service := &herdrFixture{}
+	m.herdr = service
+	m.links = &herdrLinksFixture{links: map[string]model.HerdrLink{}}
 
 	if command := press(m, 'e'); command != nil {
 		t.Fatal("disabled Herdr shortcut started an operation")
 	}
-	if !strings.Contains(strings.ToLower(m.message), "disabled") || len(opener.requests) != 0 {
-		t.Fatalf("disabled Herdr state: message=%q requests=%+v", m.message, opener.requests)
+	if !strings.Contains(strings.ToLower(m.message), "disabled") || len(service.requests) != 0 {
+		t.Fatalf("disabled Herdr state: message=%q requests=%+v", m.message, service.requests)
 	}
 }
 
@@ -323,16 +415,17 @@ func TestHerdrShortcutPreventsDuplicateRequests(t *testing.T) {
 	cfg := config.Default()
 	cfg.Herdr.Enabled = true
 	m, _, _ := testModel(t, cfg)
-	opener := &herdrFixture{}
-	m.herdr = opener
+	service := &herdrFixture{}
+	m.herdr = service
+	m.links = &herdrLinksFixture{links: map[string]model.HerdrLink{}}
 
 	command := press(m, 'e')
 	if command == nil || press(m, 'e') != nil {
 		t.Fatal("duplicate Herdr operation was accepted")
 	}
 	m.Update(command())
-	if len(opener.requests) != 1 {
-		t.Fatalf("Herdr requests = %+v", opener.requests)
+	if m.menu != "herdr" {
+		t.Fatalf("Herdr list menu = %q", m.menu)
 	}
 }
 

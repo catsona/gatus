@@ -50,7 +50,7 @@ func (m *Model) visibleControls(actions []string) []string {
 		return actions
 	}
 
-	return slices.DeleteFunc(slices.Clone(actions), func(action string) bool { return action == "open_herdr" })
+	return slices.DeleteFunc(slices.Clone(actions), func(action string) bool { return action == "open_herdr" || action == "create_herdr" })
 }
 
 func (m *Model) controlBars() ([]string, []string, []hitRegion) {

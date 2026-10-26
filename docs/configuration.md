@@ -131,6 +131,7 @@ keys:
   sort: [s]
   sort_direction: [S]
   open_herdr: [e]
+  create_herdr: [shift+e]
   rerun_all: [ctrl+r]
   rerun_failed: [R]
   cancel_ci: [x]
@@ -142,7 +143,7 @@ keys:
 
 Equivalent keys cannot control different actions. Editor controls remain Enter to save and Esc to cancel. The multiline template editor uses Ctrl+S to save. Ctrl+C always quits.
 
-`open_herdr` opens the selected pull request's Herdr workspace. The action is available only when `herdr.enabled` is true. A workspace is identified by a `gstatus_pr` metadata token based on the pull request URL. If the tagged workspace is live, gstatus focuses it; otherwise it creates and focuses a new workspace with `herdr.root` as its working directory. Repository cloning and agent startup remain manual.
+`open_herdr` lists live Herdr workspaces for the selected pull request. Choose a workspace to attach it to the PR and focus it. The current link is preselected when it is live. `create_herdr` creates a new workspace with `herdr.root` as its working directory, stores its workspace ID for the PR, and focuses it. Links are stored in `state.db`, and several PRs can reference one workspace. A workspace label or working directory does not identify a link. Repository cloning and agent startup remain manual.
 
 ## State and desktop commands
 

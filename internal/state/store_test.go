@@ -59,3 +59,65 @@ func TestAccountStateAndDeliverySurviveReopen(t *testing.T) {
 		t.Fatalf("delivery crossed account boundary: %+v %v", pending, err)
 	}
 }
+
+func TestHerdrLinkSurvivesReopenAndSharesWorkspace(t *testing.T) {
+	path := filepath.Join(t.TempDir(), "state.db")
+	store, err := Open(path)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	first := model.HerdrLink{PRURL: "https://github.com/acme/app/pull/1", WorkspaceID: "space-1", Label: "Renamed", Root: "/work/one"}
+	second := model.HerdrLink{PRURL: "https://github.com/acme/app/pull/2", WorkspaceID: "space-1", Label: "Renamed", Root: "/work/one"}
+	if err := store.SaveHerdrLink(first); err != nil {
+		t.Fatal(err)
+	}
+	if err := store.SaveHerdrLink(second); err != nil {
+		t.Fatal(err)
+	}
+
+	if err := store.Close(); err != nil {
+		t.Fatal(err)
+	}
+	store, err = Open(path)
+	if err != nil {
+		t.Fatal(err)
+	}
+	t.Cleanup(func() { _ = store.Close() })
+
+	loaded, ok, err := store.HerdrLink(first.PRURL)
+	if err != nil || !ok || loaded != first {
+		t.Fatalf("first Herdr link = %+v, %t, %v", loaded, ok, err)
+	}
+	loaded, ok, err = store.HerdrLink(second.PRURL)
+	if err != nil || !ok || loaded.WorkspaceID != first.WorkspaceID {
+		t.Fatalf("shared Herdr workspace = %+v, %t, %v", loaded, ok, err)
+	}
+}
+
+func TestHerdrLinkReplacementAndRemoval(t *testing.T) {
+	store, err := Open(filepath.Join(t.TempDir(), "state.db"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	t.Cleanup(func() { _ = store.Close() })
+
+	url := "https://github.com/acme/app/pull/1"
+	if err := store.SaveHerdrLink(model.HerdrLink{PRURL: url, WorkspaceID: "space-1"}); err != nil {
+		t.Fatal(err)
+	}
+	replacement := model.HerdrLink{PRURL: url, WorkspaceID: "space-2", Label: "New", Root: "/work/two"}
+	if err := store.SaveHerdrLink(replacement); err != nil {
+		t.Fatal(err)
+	}
+	loaded, ok, err := store.HerdrLink(url)
+	if err != nil || !ok || loaded != replacement {
+		t.Fatalf("replacement = %+v, %t, %v", loaded, ok, err)
+	}
+	if err := store.RemoveHerdrLink(url); err != nil {
+		t.Fatal(err)
+	}
+	if _, ok, err := store.HerdrLink(url); err != nil || ok {
+		t.Fatalf("removed Herdr link = %t, %v", ok, err)
+	}
+}

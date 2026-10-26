@@ -29,6 +29,48 @@ func TestClientFocusesWorkspaceWithMatchingPRToken(t *testing.T) {
 	}
 }
 
+func TestClientListsWorkspaceIdentityAndDisplayFields(t *testing.T) {
+	_, executable, _ := fakeHerdr(t)
+	t.Setenv("HERDR_SCENARIO", "list_api")
+
+	spaces, err := (Client{Executable: executable}).List(context.Background())
+	if err != nil {
+		t.Fatal(err)
+	}
+	want := []Workspace{{ID: "w1", Label: "Renamed", Root: "/work/one"}, {ID: "w2", Label: "Other", Root: "/work/two"}}
+	if len(spaces) != len(want) || spaces[0] != want[0] || spaces[1] != want[1] {
+		t.Fatalf("workspaces = %+v, want %+v", spaces, want)
+	}
+}
+
+func TestClientFocusesRequestedWorkspace(t *testing.T) {
+	_, executable, log := fakeHerdr(t)
+	t.Setenv("HERDR_SCENARIO", "focus_api")
+
+	if err := (Client{Executable: executable}).Focus(context.Background(), "w9"); err != nil {
+		t.Fatal(err)
+	}
+	if lines := readLines(t, log); strings.Join(lines, "\n") != "workspace focus w9" {
+		t.Fatalf("commands = %q", lines)
+	}
+}
+
+func TestClientCreatesWorkspaceWithoutPRMetadata(t *testing.T) {
+	directory, executable, log := fakeHerdr(t)
+	t.Setenv("HERDR_SCENARIO", "create_api")
+
+	space, err := (Client{Executable: executable}).Create(context.Background(), Request{Root: filepath.Join(directory, "spaces"), Label: "PR #42 - owner/repo"})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if space != (Workspace{ID: "w2", Label: "PR #42 - owner/repo", Root: filepath.Join(directory, "spaces")}) {
+		t.Fatalf("workspace = %+v", space)
+	}
+	if lines := readLines(t, log); strings.Join(lines, "\n") != "workspace create --cwd "+filepath.Join(directory, "spaces")+" --label PR #42 - owner/repo --focus" {
+		t.Fatalf("commands = %q", lines)
+	}
+}
+
 func TestClientCreatesAndTagsWorkspaceAfterMissingToken(t *testing.T) {
 	directory, executable, log := fakeHerdr(t)
 	t.Setenv("HERDR_SCENARIO", "create")
@@ -110,6 +152,15 @@ func fakeHerdr(t *testing.T) (string, string, string) {
 	script := `#!/bin/sh
 printf '%s\n' "$*" >> "$HERDR_LOG"
 case "$HERDR_SCENARIO:$2" in
+list_api:list)
+  printf '%s' '{"result":{"workspaces":[{"workspace_id":"w1","label":"Renamed","cwd":"/work/one"},{"workspace_id":"w2","label":"Other","cwd":"/work/two"}]}}'
+  ;;
+focus_api:focus)
+  printf '%s' '{"result":{}}'
+  ;;
+create_api:create)
+  printf '%s' '{"result":{"workspace":{"workspace_id":"w2","label":"PR #42 - owner/repo","cwd":"'"$4"'"}}}'
+  ;;
 existing:list|focus_missing:list|create:list)
   if [ "$HERDR_SCENARIO" = "existing" ] || [ "$HERDR_SCENARIO" = "focus_missing" ]; then
     printf '%s' '{"result":{"workspaces":[{"workspace_id":"w1","tokens":{"gstatus_pr":"https://github.com/owner/repo/pull/42"}}]}}'

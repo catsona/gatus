@@ -90,7 +90,7 @@ func Run(ctx context.Context, directory string, output io.Writer) error {
 	services.Go(func() { worker.Run(ctx, engine.Session, report) })
 	model := tui.New(tui.Options{
 		Context: ctx, ConfigPath: path, Config: cfg, Backend: engine,
-		Desktop: desktop.Native{}, Herdr: herdr.Client{Executable: "herdr"},
+		Desktop: desktop.Native{}, Herdr: herdr.Client{Executable: "herdr"}, Links: store,
 		Changes: config.Watch(ctx, path), Notices: notices,
 	})
 	_, err = tea.NewProgram(model, tea.WithContext(ctx), tea.WithOutput(output)).Run()

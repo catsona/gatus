@@ -30,7 +30,7 @@ func Open(path string) (*Store, error) {
 	}
 
 	err = db.Update(func(tx *bolt.Tx) error {
-		for _, name := range []string{"accounts", "deliveries", "metadata"} {
+		for _, name := range []string{"accounts", "deliveries", "herdr_links", "metadata"} {
 			if _, err := tx.CreateBucketIfNotExists([]byte(name)); err != nil {
 				return err
 			}
@@ -50,6 +50,42 @@ func Open(path string) (*Store, error) {
 	}
 
 	return &Store{db: db}, nil
+}
+
+// HerdrLink loads the workspace link for a pull request URL.
+func (s *Store) HerdrLink(prURL string) (model.HerdrLink, bool, error) {
+	var link model.HerdrLink
+	err := s.db.View(func(tx *bolt.Tx) error {
+		data := tx.Bucket([]byte("herdr_links")).Get([]byte(prURL))
+		if data == nil {
+			return nil
+		}
+
+		if err := json.Unmarshal(data, &link); err != nil {
+			return err
+		}
+		return nil
+	})
+	return link, link.PRURL != "", err
+}
+
+// SaveHerdrLink replaces the workspace link for a pull request URL.
+func (s *Store) SaveHerdrLink(link model.HerdrLink) error {
+	data, err := json.Marshal(link)
+	if err != nil {
+		return err
+	}
+
+	return s.db.Update(func(tx *bolt.Tx) error {
+		return tx.Bucket([]byte("herdr_links")).Put([]byte(link.PRURL), data)
+	})
+}
+
+// RemoveHerdrLink deletes the workspace link for a pull request URL.
+func (s *Store) RemoveHerdrLink(prURL string) error {
+	return s.db.Update(func(tx *bolt.Tx) error {
+		return tx.Bucket([]byte("herdr_links")).Delete([]byte(prURL))
+	})
 }
 
 // Close flushes outstanding database operations and releases the process lock.

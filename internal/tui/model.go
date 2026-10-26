@@ -39,6 +39,13 @@ type Desktop interface {
 	Copy(context.Context, string) error
 }
 
+// HerdrLinks persists the relationship between pull requests and workspaces.
+type HerdrLinks interface {
+	HerdrLink(string) (model.HerdrLink, bool, error)
+	SaveHerdrLink(model.HerdrLink) error
+	RemoveHerdrLink(string) error
+}
+
 // Options connects the UI to cancellable services and the shared config file.
 type Options struct {
 	Context    context.Context
@@ -46,7 +53,8 @@ type Options struct {
 	Config     config.Config
 	Backend    Backend
 	Desktop    Desktop
-	Herdr      herdr.Opener
+	Herdr      herdr.Service
+	Links      HerdrLinks
 	Changes    <-chan config.Change
 	Notices    <-chan string
 }
@@ -58,7 +66,8 @@ type Model struct {
 	cfg                         config.Config
 	backend                     Backend
 	desktop                     Desktop
-	herdr                       herdr.Opener
+	herdr                       herdr.Service
+	links                       HerdrLinks
 	changes                     <-chan config.Change
 	notices                     <-chan string
 	snapshot                    monitor.Snapshot
@@ -70,6 +79,9 @@ type Model struct {
 	settingIndex, settingOffset int
 	menu                        string
 	menuIndex                   int
+	herdrSpaces                 []herdr.Workspace
+	herdrPRURL                  string
+	herdrID                     string
 	edit                        string
 	input                       textinput.Model
 	area                        textarea.Model
@@ -94,6 +106,9 @@ type operationResult struct {
 	acknowledge  bool
 	releaseBusy  bool
 	copyFallback string
+	herdrMode    string
+	herdrSpaces  []herdr.Workspace
+	herdrSpace   herdr.Workspace
 	message      string
 	err          error
 }
@@ -107,7 +122,7 @@ func New(options Options) *Model {
 
 	m := &Model{
 		ctx: ctx, path: options.ConfigPath, cfg: options.Config,
-		backend: options.Backend, desktop: options.Desktop, herdr: options.Herdr, changes: options.Changes, notices: options.Notices,
+		backend: options.Backend, desktop: options.Desktop, herdr: options.Herdr, links: options.Links, changes: options.Changes, notices: options.Notices,
 		width: 80, height: 24, focus: -1, input: textinput.New(), area: textarea.New(), busy: map[string]bool{},
 	}
 	m.input.Prompt = "> "
@@ -235,6 +250,9 @@ func (m *Model) Update(message tea.Msg) (tea.Model, tea.Cmd) {
 	case operationResult:
 		if msg.generation != m.snapshot.Generation {
 			return m, nil
+		}
+		if msg.herdrMode != "" {
+			return m, m.handleHerdrResult(msg)
 		}
 		if msg.releaseBusy {
 			delete(m.busy, msg.id)
