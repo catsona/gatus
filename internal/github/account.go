@@ -7,7 +7,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/catsona/gstatus/internal/model"
+	"github.com/catsona/gatus/internal/model"
 )
 
 // Credentials resolves effective gh credentials without persisting or logging them.

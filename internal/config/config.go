@@ -11,7 +11,7 @@ import (
 	"text/template"
 	"time"
 
-	"github.com/catsona/gstatus/internal/model"
+	"github.com/catsona/gatus/internal/model"
 	"go.yaml.in/yaml/v3"
 )
 

@@ -13,11 +13,11 @@ import (
 
 	tea "charm.land/bubbletea/v2"
 	"charm.land/lipgloss/v2"
-	"github.com/catsona/gstatus/internal/config"
-	"github.com/catsona/gstatus/internal/github"
-	"github.com/catsona/gstatus/internal/herdr"
-	"github.com/catsona/gstatus/internal/model"
-	"github.com/catsona/gstatus/internal/monitor"
+	"github.com/catsona/gatus/internal/config"
+	"github.com/catsona/gatus/internal/github"
+	"github.com/catsona/gatus/internal/herdr"
+	"github.com/catsona/gatus/internal/model"
+	"github.com/catsona/gatus/internal/monitor"
 	"github.com/charmbracelet/x/ansi"
 )
 

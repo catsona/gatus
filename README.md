@@ -13,12 +13,12 @@ The application uses the active `gh` account and supports GitHub.com.
 ## Install
 
 ```sh
-go install github.com/catsona/gstatus/cmd/gatus@latest
+go install github.com/catsona/gatus/cmd/gatus@latest
 gh auth login
 gatus
 ```
 
-Versioned archives for macOS ARM64, Linux ARM64 and Linux AMD64 are available from [GitHub Releases](https://github.com/catsona/gstatus/releases). Check an installed binary with `gatus --version`.
+Versioned archives for macOS ARM64, Linux ARM64 and Linux AMD64 are available from [GitHub Releases](https://github.com/catsona/gatus/releases). Check an installed binary with `gatus --version`.
 
 ## Use the monitor
 

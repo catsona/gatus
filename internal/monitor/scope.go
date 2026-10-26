@@ -1,8 +1,8 @@
 package monitor
 
 import (
-	"github.com/catsona/gstatus/internal/config"
-	"github.com/catsona/gstatus/internal/model"
+	"github.com/catsona/gatus/internal/config"
+	"github.com/catsona/gatus/internal/model"
 )
 
 func monitored(pr model.PR, cfg config.Config) bool {

@@ -7,8 +7,8 @@ import (
 	"testing"
 
 	tea "charm.land/bubbletea/v2"
-	"github.com/catsona/gstatus/internal/config"
-	"github.com/catsona/gstatus/internal/monitor"
+	"github.com/catsona/gatus/internal/config"
+	"github.com/catsona/gatus/internal/monitor"
 	uv "github.com/charmbracelet/ultraviolet"
 	"github.com/charmbracelet/x/ansi"
 )

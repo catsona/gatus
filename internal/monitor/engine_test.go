@@ -7,10 +7,10 @@ import (
 	"testing"
 	"time"
 
-	"github.com/catsona/gstatus/internal/config"
-	"github.com/catsona/gstatus/internal/github"
-	"github.com/catsona/gstatus/internal/model"
-	"github.com/catsona/gstatus/internal/state"
+	"github.com/catsona/gatus/internal/config"
+	"github.com/catsona/gatus/internal/github"
+	"github.com/catsona/gatus/internal/model"
+	"github.com/catsona/gatus/internal/state"
 )
 
 type accountSource struct {

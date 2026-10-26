@@ -1,4 +1,4 @@
-module github.com/catsona/gstatus
+module github.com/catsona/gatus
 
 go 1.26.0
 

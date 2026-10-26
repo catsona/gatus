@@ -6,7 +6,7 @@ import (
 	"text/template"
 	"text/template/parse"
 
-	"github.com/catsona/gstatus/internal/model"
+	"github.com/catsona/gatus/internal/model"
 )
 
 func validateTemplate(tmpl *template.Template) error {

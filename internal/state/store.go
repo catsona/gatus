@@ -9,7 +9,7 @@ import (
 	"sort"
 	"time"
 
-	"github.com/catsona/gstatus/internal/model"
+	"github.com/catsona/gatus/internal/model"
 	bolt "go.etcd.io/bbolt"
 )
 

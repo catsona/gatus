@@ -9,7 +9,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/catsona/gstatus/internal/model"
+	"github.com/catsona/gatus/internal/model"
 )
 
 func detailFixture(t *testing.T, calls string) *Client {

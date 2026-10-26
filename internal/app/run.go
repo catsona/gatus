@@ -13,14 +13,14 @@ import (
 	"time"
 
 	tea "charm.land/bubbletea/v2"
-	"github.com/catsona/gstatus/internal/config"
-	"github.com/catsona/gstatus/internal/desktop"
-	"github.com/catsona/gstatus/internal/github"
-	"github.com/catsona/gstatus/internal/herdr"
-	"github.com/catsona/gstatus/internal/monitor"
-	"github.com/catsona/gstatus/internal/notify"
-	"github.com/catsona/gstatus/internal/state"
-	"github.com/catsona/gstatus/internal/tui"
+	"github.com/catsona/gatus/internal/config"
+	"github.com/catsona/gatus/internal/desktop"
+	"github.com/catsona/gatus/internal/github"
+	"github.com/catsona/gatus/internal/herdr"
+	"github.com/catsona/gatus/internal/monitor"
+	"github.com/catsona/gatus/internal/notify"
+	"github.com/catsona/gatus/internal/state"
+	"github.com/catsona/gatus/internal/tui"
 	"github.com/charmbracelet/x/term"
 )
 

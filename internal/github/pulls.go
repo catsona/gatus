@@ -7,7 +7,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/catsona/gstatus/internal/model"
+	"github.com/catsona/gatus/internal/model"
 )
 
 type issue struct {

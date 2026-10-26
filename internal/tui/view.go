@@ -8,8 +8,8 @@ import (
 
 	tea "charm.land/bubbletea/v2"
 	"charm.land/lipgloss/v2"
-	"github.com/catsona/gstatus/internal/model"
-	"github.com/catsona/gstatus/internal/monitor"
+	"github.com/catsona/gatus/internal/model"
+	"github.com/catsona/gatus/internal/monitor"
 	"github.com/charmbracelet/x/ansi"
 )
 

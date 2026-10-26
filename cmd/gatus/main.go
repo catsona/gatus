@@ -11,7 +11,7 @@ import (
 	"runtime/debug"
 	"syscall"
 
-	"github.com/catsona/gstatus/internal/app"
+	"github.com/catsona/gatus/internal/app"
 )
 
 var version = "dev"
