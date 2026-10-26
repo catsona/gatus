@@ -1,6 +1,6 @@
 # Configuration reference
 
-The application reads `~/.gstatus/config.yaml`. It creates the file with defaults on the first interactive start. Unknown fields and invalid values reject the complete update. The running application keeps the last valid configuration and displays the error.
+The application reads `~/.gatus/config.yaml`. It creates the file with defaults on the first interactive start. Unknown fields and invalid values reject the complete update. The running application keeps the last valid configuration and displays the error.
 
 The settings screen saves valid changes immediately. If an external edit changes a field while it is open, press `l` to load the new value or `w` to save the draft. Other externally changed fields remain intact.
 
@@ -40,7 +40,7 @@ notifications:
 
 `repositories` contains `owner/repo` names. The application shows pull requests authored by the active GitHub user. The current implementation supports `github.com`.
 
-`herdr.enabled` enables the selected-PR Herdr actions. When enabled, `herdr.root` is the working directory for newly created Herdr workspaces; `~` refers to your home directory. gstatus does not clone a repository or start an agent in the workspace.
+`herdr.enabled` enables the selected-PR Herdr actions. When enabled, `herdr.root` is the working directory for newly created Herdr workspaces; `~` refers to your home directory. gatus does not clone a repository or start an agent in the workspace.
 
 `refresh.interval` accepts Go duration strings and must be at least `5s`. Account detection runs every two seconds, even when auto-refresh is disabled.
 
@@ -144,10 +144,10 @@ keys:
 
 Equivalent keys cannot control different actions. Editor controls remain Enter to save and Esc to cancel. The multiline template editor uses Ctrl+S to save. Ctrl+C always quits.
 
-`open_herdr` focuses the workspace linked to the selected pull request. If no link exists, gstatus reports an error. If Herdr reports that the workspace is closed, gstatus reports that state and keeps the link. `attach_herdr` lists live spaces, lets you choose one, stores its workspace ID for the PR, and focuses it. `create_herdr` creates a new workspace with `herdr.root` as its working directory, stores its workspace ID for the PR, and focuses it. Links are stored in `state.db`, and several PRs can reference one workspace. A workspace label or working directory does not identify a link. Repository cloning and agent startup remain manual.
+`open_herdr` focuses the workspace linked to the selected pull request. If no link exists, gatus reports an error. If Herdr reports that the workspace is closed, gatus reports that state and keeps the link. `attach_herdr` lists live spaces, lets you choose one, stores its workspace ID for the PR, and focuses it. `create_herdr` creates a new workspace with `herdr.root` as its working directory, stores its workspace ID for the PR, and focuses it. Links are stored in `state.db`, and several PRs can reference one workspace. A workspace label or working directory does not identify a link. Repository cloning and agent startup remain manual.
 
 ## State and desktop commands
 
-`~/.gstatus/state.db` contains account snapshots, read marks and the delivery queue. The account key combines the GitHub host with the immutable user ID. Credentials stay in memory. The application uses private directory and file permissions, and only one process can open the database at a time.
+`~/.gatus/state.db` contains account snapshots, read marks and the delivery queue. The account key combines the GitHub host with the immutable user ID. Credentials stay in memory. The application uses private directory and file permissions, and only one process can open the database at a time.
 
 Browser launch uses `GH_BROWSER`, then `BROWSER`, then `open` on macOS or `xdg-open` on Linux. Copy uses `pbcopy` on macOS and `wl-copy`, `xclip` or `xsel` on Linux. If no clipboard helper exists, the application requests clipboard access through terminal OSC 52 support.

@@ -89,7 +89,7 @@ func TestClientCreatesAndTagsWorkspaceAfterMissingToken(t *testing.T) {
 	want := []string{
 		"workspace list",
 		"workspace create --cwd " + filepath.Join(directory, "spaces") + " --label PR #42 - owner/repo --focus",
-		"workspace report-metadata w2 --source gstatus --token gstatus_pr=https://github.com/owner/repo/pull/42",
+		"workspace report-metadata w2 --source gatus --token gatus_pr=https://github.com/owner/repo/pull/42",
 	}
 	if strings.Join(lines, "\n") != strings.Join(want, "\n") {
 		t.Fatalf("commands = %q, want %q", lines, want)
@@ -163,7 +163,7 @@ create_api:create)
   ;;
 existing:list|focus_missing:list|create:list)
   if [ "$HERDR_SCENARIO" = "existing" ] || [ "$HERDR_SCENARIO" = "focus_missing" ]; then
-    printf '%s' '{"result":{"workspaces":[{"workspace_id":"w1","tokens":{"gstatus_pr":"https://github.com/owner/repo/pull/42"}}]}}'
+    printf '%s' '{"result":{"workspaces":[{"workspace_id":"w1","tokens":{"gatus_pr":"https://github.com/owner/repo/pull/42"}}]}}'
   else
     printf '%s' '{"result":{"workspaces":[]}}'
   fi

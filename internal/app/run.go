@@ -30,7 +30,7 @@ func Run(ctx context.Context, directory string, output io.Writer) error {
 		return err
 	}
 	if !term.IsTerminal(os.Stdin.Fd()) {
-		return fmt.Errorf("run gstatus in an interactive terminal")
+		return fmt.Errorf("run gatus in an interactive terminal")
 	}
 
 	executable, err := exec.LookPath("gh")

@@ -13,7 +13,7 @@ import (
 	"time"
 )
 
-const tokenName = "gstatus_pr"
+const tokenName = "gatus_pr"
 
 // Request identifies the workspace that should be focused or created.
 type Request struct {
@@ -173,7 +173,7 @@ func (c Client) Open(parent context.Context, request Request) error {
 		return errors.New("Herdr create response did not contain a workspace ID")
 	}
 
-	if err := c.run(ctx, "workspace", "report-metadata", created.Result.Workspace.ID, "--source", "gstatus", "--token", tokenName+"="+request.PRKey); err != nil {
+	if err := c.run(ctx, "workspace", "report-metadata", created.Result.Workspace.ID, "--source", "gatus", "--token", tokenName+"="+request.PRKey); err != nil {
 		return err
 	}
 

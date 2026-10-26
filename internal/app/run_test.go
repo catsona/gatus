@@ -11,7 +11,7 @@ import (
 )
 
 func TestCancelledStartupDoesNotCreateState(t *testing.T) {
-	directory := filepath.Join(t.TempDir(), "gstatus")
+	directory := filepath.Join(t.TempDir(), "gatus")
 	ctx, cancel := context.WithCancel(context.Background())
 	cancel()
 	var output bytes.Buffer
@@ -42,11 +42,11 @@ func TestInvalidStartupConfigIsNotOverwritten(t *testing.T) {
 }
 
 func TestPTYHelper(t *testing.T) {
-	if os.Getenv("GSTATUS_PTY_HELPER") != "1" {
+	if os.Getenv("GATUS_PTY_HELPER") != "1" {
 		t.Skip("requires the PTY smoke harness")
 	}
 
-	if err := Run(context.Background(), os.Getenv("GSTATUS_TEST_DIR"), os.Stdout); err != nil {
+	if err := Run(context.Background(), os.Getenv("GATUS_TEST_DIR"), os.Stdout); err != nil {
 		t.Fatal(err)
 	}
 }

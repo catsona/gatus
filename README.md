@@ -1,6 +1,6 @@
-# gstatus
+# gatus
 
-`gstatus` monitors your GitHub pull requests in a terminal. It shows CI, review, comment and reply activity, and lets you open, copy, refresh, rerun or cancel CI for the selected pull request.
+`gatus` monitors your GitHub pull requests in a terminal. It shows CI, review, comment and reply activity, and lets you open, copy, refresh, rerun or cancel CI for the selected pull request.
 
 ## Requirements
 
@@ -13,12 +13,12 @@ The application uses the active `gh` account and supports GitHub.com.
 ## Install
 
 ```sh
-go install github.com/catsona/gstatus/cmd/gstatus@latest
+go install github.com/catsona/gstatus/cmd/gatus@latest
 gh auth login
-gstatus
+gatus
 ```
 
-Versioned archives for macOS ARM64, Linux ARM64 and Linux AMD64 are available from [GitHub Releases](https://github.com/catsona/gstatus/releases). Check an installed binary with `gstatus --version`.
+Versioned archives for macOS ARM64, Linux ARM64 and Linux AMD64 are available from [GitHub Releases](https://github.com/catsona/gstatus/releases). Check an installed binary with `gatus --version`.
 
 ## Use the monitor
 
@@ -50,9 +50,9 @@ The Branch column shows `conflict`, `ok` or `unknown`. Narrow terminals show `!!
 
 ## Configuration and state
 
-Configuration and state are stored in `~/.gstatus/`. Edit `config.yaml` or use the settings screen. Valid changes apply without a restart. The first load marks existing pull requests as read. Copying a URL never changes its read state.
+Configuration and state are stored in `~/.gatus/`. Edit `config.yaml` or use the settings screen. Valid changes apply without a restart. The first load marks existing pull requests as read. Copying a URL never changes its read state.
 
-Herdr integration is disabled by default. Enable it in Settings and set the Herdr root path. Press `e` to open the linked space, Shift+E to attach an existing space, or Ctrl+E to create and link a new one. gstatus stores the link by Herdr workspace ID in `state.db`, so renaming or moving a space does not change the link. One space can serve several pull requests. If the linked space is closed, gstatus reports the error and keeps the link. Clone the repository and start Codex or another agent from a new space manually.
+Herdr integration is disabled by default. Enable it in Settings and set the Herdr root path. Press `e` to open the linked space, Shift+E to attach an existing space, or Ctrl+E to create and link a new one. gatus stores the link by Herdr workspace ID in `state.db`, so renaming or moving a space does not change the link. One space can serve several pull requests. If the linked space is closed, gatus reports the error and keeps the link. Clone the repository and start Codex or another agent from a new space manually.
 
 The header shows the active `gh` login. After `gh auth switch`, the application updates the account during its next account check. Each account has separate read state.
 

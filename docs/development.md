@@ -31,21 +31,21 @@ sh scripts/build.sh
 
 The script writes these archives and `SHA256SUMS` to `dist/`:
 
-- `gstatus-<version>-darwin-arm64.tar.gz`
-- `gstatus-<version>-linux-arm64.tar.gz`
-- `gstatus-<version>-linux-amd64.tar.gz`
+- `gatus-<version>-darwin-arm64.tar.gz`
+- `gatus-<version>-linux-arm64.tar.gz`
+- `gatus-<version>-linux-amd64.tar.gz`
 
-Each archive contains `gstatus`. Builds use `CGO_ENABLED=0`. Set `GSTATUS_VERSION` to override the embedded version.
+Each archive contains `gatus`. Builds use `CGO_ENABLED=0`. Set `GATUS_VERSION` to override the embedded version.
 
-The GitHub Actions workflow runs on branch pushes, pull requests and manual dispatches. It checks formatting, runs vet and race tests, builds all targets and uploads `gstatus-binaries`. Version tags such as `v0.1.0` publish separate GitHub Releases with the archives and `SHA256SUMS`.
+The GitHub Actions workflow runs on branch pushes, pull requests and manual dispatches. It checks formatting, runs vet and race tests, builds all targets and uploads `gatus-binaries`. Version tags such as `v0.1.0` publish separate GitHub Releases with the archives and `SHA256SUMS`.
 
-`gstatus --version` reports the linked build version. A version installed with `go install ...@v0.1.0` uses Go module metadata when linker flags are absent.
+`gatus --version` reports the linked build version. A version installed with `go install ...@v0.1.0` uses Go module metadata when linker flags are absent.
 
 ## Package boundaries
 
 | Package | Responsibility |
 | --- | --- |
-| `cmd/gstatus` | Start and stop the application |
+| `cmd/gatus` | Start and stop the application |
 | `internal/config` | Parse, validate, write and reload YAML configuration |
 | `internal/github` | Run GitHub CLI requests, authenticate and normalize responses |
 | `internal/monitor` | Coordinate polling, account generations, events and aggregate CI |

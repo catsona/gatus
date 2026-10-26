@@ -26,7 +26,7 @@ func Open(path string) (*Store, error) {
 
 	db, err := bolt.Open(path, 0600, &bolt.Options{Timeout: time.Second})
 	if err != nil {
-		return nil, fmt.Errorf("open state database (is gstatus already running?): %w", err)
+		return nil, fmt.Errorf("open state database (is gatus already running?): %w", err)
 	}
 
 	err = db.Update(func(tx *bolt.Tx) error {

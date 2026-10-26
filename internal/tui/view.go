@@ -46,7 +46,7 @@ func (m *Model) layout() (string, []hitRegion) {
 	if m.snapshot.Account.Login != "" {
 		login = "@" + m.snapshot.Account.Login
 	}
-	label := "gstatus"
+	label := "gatus"
 	if m.settings {
 		label += " / Settings"
 	}

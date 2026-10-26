@@ -13,7 +13,7 @@ func TestVersion(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	if got := output.String(); got != "gstatus dev\n" {
+	if got := output.String(); got != "gatus dev\n" {
 		t.Fatalf("version output = %q", got)
 	}
 }

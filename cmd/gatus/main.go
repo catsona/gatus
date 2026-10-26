@@ -28,7 +28,7 @@ func resolveVersion(linked string, info *debug.BuildInfo) string {
 
 func main() {
 	if err := run(os.Args[1:], os.Stdout); err != nil {
-		fmt.Fprintln(os.Stderr, "gstatus:", err)
+		fmt.Fprintln(os.Stderr, "gatus:", err)
 		os.Exit(1)
 	}
 }
@@ -38,11 +38,11 @@ func run(args []string, output io.Writer) error {
 		switch args[0] {
 		case "--version":
 			info, _ := debug.ReadBuildInfo()
-			_, err := fmt.Fprintf(output, "gstatus %s\n", resolveVersion(version, info))
+			_, err := fmt.Fprintf(output, "gatus %s\n", resolveVersion(version, info))
 			return err
 
 		case "--help", "-h":
-			_, err := fmt.Fprintln(output, "Usage: gstatus [--version | --help]")
+			_, err := fmt.Fprintln(output, "Usage: gatus [--version | --help]")
 			return err
 		}
 	}
@@ -57,7 +57,7 @@ func run(args []string, output io.Writer) error {
 	}
 	ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
 	defer stop()
-	err = app.Run(ctx, filepath.Join(home, ".gstatus"), output)
+	err = app.Run(ctx, filepath.Join(home, ".gatus"), output)
 	if errors.Is(err, context.Canceled) {
 		return nil
 	}

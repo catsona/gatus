@@ -30,13 +30,13 @@ jobs:
 
       - name: Build binaries
         env:
-          GSTATUS_VERSION: ${{ startsWith(github.ref, 'refs/tags/v') && github.ref_name || github.sha }}
+          GATUS_VERSION: ${{ startsWith(github.ref, 'refs/tags/v') && github.ref_name || github.sha }}
         run: sh scripts/build.sh
 
       - name: Upload binaries
         uses: https://code.forgejo.org/actions/upload-artifact@v3
         with:
-          name: gstatus-binaries
+          name: gatus-binaries
           path: |
             dist/*.tar.gz
             dist/SHA256SUMS
@@ -58,6 +58,6 @@ jobs:
           token: ${{ github.token }}
           sha: ${{ github.sha }}
           tag: ${{ github.ref_name }}
-          title: gstatus ${{ github.ref_name }}
+          title: gatus ${{ github.ref_name }}
           release-dir: dist/release
           release-notes: 'Binaries built from tag ${{ github.ref_name }} at commit ${{ github.sha }}.'
