@@ -6,8 +6,8 @@ import (
 	"fmt"
 	"time"
 
-	"git.pegasko.art/catsona/gstatus/internal/github"
-	"git.pegasko.art/catsona/gstatus/internal/model"
+	"github.com/catsona/gstatus/internal/github"
+	"github.com/catsona/gstatus/internal/model"
 )
 
 // RefreshPR fetches one known PR and reconciles its events without rediscovering the list.

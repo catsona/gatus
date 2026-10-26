@@ -1,4 +1,4 @@
-module git.pegasko.art/catsona/gstatus
+module github.com/catsona/gstatus
 
 go 1.26.0
 

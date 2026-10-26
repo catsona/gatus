@@ -37,7 +37,7 @@ The script writes these archives and `SHA256SUMS` to `dist/`:
 
 Each archive contains `gstatus`. Builds use `CGO_ENABLED=0`. Set `GSTATUS_VERSION` to override the embedded version.
 
-The Forgejo workflow runs on branch pushes, pull requests and manual dispatches. It checks formatting, runs vet and race tests, builds all targets and uploads `gstatus-binaries`. Version tags such as `v0.1.0` publish separate Forgejo Releases with the archives and `SHA256SUMS`.
+The GitHub Actions workflow runs on branch pushes, pull requests and manual dispatches. It checks formatting, runs vet and race tests, builds all targets and uploads `gstatus-binaries`. Version tags such as `v0.1.0` publish separate GitHub Releases with the archives and `SHA256SUMS`.
 
 `gstatus --version` reports the linked build version. A version installed with `go install ...@v0.1.0` uses Go module metadata when linker flags are absent.
 

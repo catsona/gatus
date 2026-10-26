@@ -9,10 +9,10 @@ import (
 	"sync"
 	"time"
 
-	"git.pegasko.art/catsona/gstatus/internal/config"
-	"git.pegasko.art/catsona/gstatus/internal/github"
-	"git.pegasko.art/catsona/gstatus/internal/model"
-	"git.pegasko.art/catsona/gstatus/internal/state"
+	"github.com/catsona/gstatus/internal/config"
+	"github.com/catsona/gstatus/internal/github"
+	"github.com/catsona/gstatus/internal/model"
+	"github.com/catsona/gstatus/internal/state"
 )
 
 // Source binds every data or CI operation to an explicitly captured credential.

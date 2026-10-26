@@ -7,8 +7,8 @@ import (
 	"strings"
 	"time"
 
-	"git.pegasko.art/catsona/gstatus/internal/config"
-	"git.pegasko.art/catsona/gstatus/internal/model"
+	"github.com/catsona/gstatus/internal/config"
+	"github.com/catsona/gstatus/internal/model"
 )
 
 // Reconcile derives events from complete revisions and never mutates the input state.

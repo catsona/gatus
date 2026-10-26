@@ -4,8 +4,8 @@ import (
 	"testing"
 	"time"
 
-	"git.pegasko.art/catsona/gstatus/internal/config"
-	"git.pegasko.art/catsona/gstatus/internal/model"
+	"github.com/catsona/gstatus/internal/config"
+	"github.com/catsona/gstatus/internal/model"
 )
 
 func TestBaselineRepliesAndLateAcknowledgement(t *testing.T) {

@@ -5,7 +5,7 @@ import (
 	"os"
 	"testing"
 
-	"git.pegasko.art/catsona/gstatus/internal/config"
+	"github.com/catsona/gstatus/internal/config"
 )
 
 func TestConflictOverwritePreservesExternalFieldsBeforeWatcher(t *testing.T) {

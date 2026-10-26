@@ -8,17 +8,17 @@
 - GitHub CLI 2.96 or newer.
 - A terminal at least 40 columns wide and 10 rows high for the full layout.
 
-The application uses the active `gh` account and supports GitHub.com. For a private module checkout, set `GOPRIVATE=git.pegasko.art/catsona/gstatus`.
+The application uses the active `gh` account and supports GitHub.com.
 
 ## Install
 
 ```sh
-go install git.pegasko.art/catsona/gstatus/cmd/gstatus@latest
+go install github.com/catsona/gstatus/cmd/gstatus@latest
 gh auth login
 gstatus
 ```
 
-Versioned archives for macOS ARM64, Linux ARM64 and Linux AMD64 are available from [Forgejo Releases](https://git.pegasko.art/catsona/gstatus/releases). Check an installed binary with `gstatus --version`.
+Versioned archives for macOS ARM64, Linux ARM64 and Linux AMD64 are available from [GitHub Releases](https://github.com/catsona/gstatus/releases). Check an installed binary with `gstatus --version`.
 
 ## Use the monitor
 

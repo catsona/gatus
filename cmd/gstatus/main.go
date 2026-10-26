@@ -11,7 +11,7 @@ import (
 	"runtime/debug"
 	"syscall"
 
-	"git.pegasko.art/catsona/gstatus/internal/app"
+	"github.com/catsona/gstatus/internal/app"
 )
 
 var version = "dev"

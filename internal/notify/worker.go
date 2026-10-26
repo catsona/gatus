@@ -12,9 +12,9 @@ import (
 	"strconv"
 	"time"
 
-	"git.pegasko.art/catsona/gstatus/internal/config"
-	"git.pegasko.art/catsona/gstatus/internal/model"
-	"git.pegasko.art/catsona/gstatus/internal/state"
+	"github.com/catsona/gstatus/internal/config"
+	"github.com/catsona/gstatus/internal/model"
+	"github.com/catsona/gstatus/internal/state"
 )
 
 // Worker delivers one due event per tick using the current configuration.

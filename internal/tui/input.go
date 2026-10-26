@@ -8,11 +8,11 @@ import (
 	"time"
 
 	tea "charm.land/bubbletea/v2"
-	"git.pegasko.art/catsona/gstatus/internal/config"
-	"git.pegasko.art/catsona/gstatus/internal/desktop"
-	"git.pegasko.art/catsona/gstatus/internal/github"
-	"git.pegasko.art/catsona/gstatus/internal/herdr"
-	"git.pegasko.art/catsona/gstatus/internal/model"
+	"github.com/catsona/gstatus/internal/config"
+	"github.com/catsona/gstatus/internal/desktop"
+	"github.com/catsona/gstatus/internal/github"
+	"github.com/catsona/gstatus/internal/herdr"
+	"github.com/catsona/gstatus/internal/model"
 )
 
 var (

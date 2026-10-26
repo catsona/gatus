@@ -11,7 +11,7 @@ import (
 	"time"
 
 	tea "charm.land/bubbletea/v2"
-	"git.pegasko.art/catsona/gstatus/internal/config"
+	"github.com/catsona/gstatus/internal/config"
 	"go.yaml.in/yaml/v3"
 )
 

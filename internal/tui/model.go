@@ -13,11 +13,11 @@ import (
 	"charm.land/bubbles/v2/textarea"
 	"charm.land/bubbles/v2/textinput"
 	tea "charm.land/bubbletea/v2"
-	"git.pegasko.art/catsona/gstatus/internal/config"
-	"git.pegasko.art/catsona/gstatus/internal/github"
-	"git.pegasko.art/catsona/gstatus/internal/herdr"
-	"git.pegasko.art/catsona/gstatus/internal/model"
-	"git.pegasko.art/catsona/gstatus/internal/monitor"
+	"github.com/catsona/gstatus/internal/config"
+	"github.com/catsona/gstatus/internal/github"
+	"github.com/catsona/gstatus/internal/herdr"
+	"github.com/catsona/gstatus/internal/model"
+	"github.com/catsona/gstatus/internal/monitor"
 )
 
 // Backend exposes monitor actions without coupling terminal rendering to network work.

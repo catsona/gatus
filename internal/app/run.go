@@ -13,14 +13,14 @@ import (
 	"time"
 
 	tea "charm.land/bubbletea/v2"
-	"git.pegasko.art/catsona/gstatus/internal/config"
-	"git.pegasko.art/catsona/gstatus/internal/desktop"
-	"git.pegasko.art/catsona/gstatus/internal/github"
-	"git.pegasko.art/catsona/gstatus/internal/herdr"
-	"git.pegasko.art/catsona/gstatus/internal/monitor"
-	"git.pegasko.art/catsona/gstatus/internal/notify"
-	"git.pegasko.art/catsona/gstatus/internal/state"
-	"git.pegasko.art/catsona/gstatus/internal/tui"
+	"github.com/catsona/gstatus/internal/config"
+	"github.com/catsona/gstatus/internal/desktop"
+	"github.com/catsona/gstatus/internal/github"
+	"github.com/catsona/gstatus/internal/herdr"
+	"github.com/catsona/gstatus/internal/monitor"
+	"github.com/catsona/gstatus/internal/notify"
+	"github.com/catsona/gstatus/internal/state"
+	"github.com/catsona/gstatus/internal/tui"
 	"github.com/charmbracelet/x/term"
 )
 

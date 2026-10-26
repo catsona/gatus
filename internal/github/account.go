@@ -7,7 +7,7 @@ import (
 	"strings"
 	"time"
 
-	"git.pegasko.art/catsona/gstatus/internal/model"
+	"github.com/catsona/gstatus/internal/model"
 )
 
 // Credentials resolves effective gh credentials without persisting or logging them.

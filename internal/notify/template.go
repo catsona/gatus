@@ -4,7 +4,7 @@ import (
 	"bytes"
 	"text/template"
 
-	"git.pegasko.art/catsona/gstatus/internal/model"
+	"github.com/catsona/gstatus/internal/model"
 )
 
 // Render applies the documented template context without constructing JSON by hand.

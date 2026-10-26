@@ -11,7 +11,7 @@ import (
 	"text/template"
 	"time"
 
-	"git.pegasko.art/catsona/gstatus/internal/model"
+	"github.com/catsona/gstatus/internal/model"
 	"go.yaml.in/yaml/v3"
 )
 

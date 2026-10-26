@@ -6,7 +6,7 @@ import (
 	"path/filepath"
 	"testing"
 
-	"git.pegasko.art/catsona/gstatus/internal/model"
+	"github.com/catsona/gstatus/internal/model"
 )
 
 func TestDetailMapsBranchConflictsWithoutTreatingRulesAsConflicts(t *testing.T) {
