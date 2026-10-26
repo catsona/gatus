@@ -15,6 +15,7 @@ import (
 	tea "charm.land/bubbletea/v2"
 	"git.pegasko.art/catsona/gstatus/internal/config"
 	"git.pegasko.art/catsona/gstatus/internal/github"
+	"git.pegasko.art/catsona/gstatus/internal/herdr"
 	"git.pegasko.art/catsona/gstatus/internal/model"
 	"git.pegasko.art/catsona/gstatus/internal/monitor"
 )
@@ -45,6 +46,7 @@ type Options struct {
 	Config     config.Config
 	Backend    Backend
 	Desktop    Desktop
+	Herdr      herdr.Opener
 	Changes    <-chan config.Change
 	Notices    <-chan string
 }
@@ -56,6 +58,7 @@ type Model struct {
 	cfg                         config.Config
 	backend                     Backend
 	desktop                     Desktop
+	herdr                       herdr.Opener
 	changes                     <-chan config.Change
 	notices                     <-chan string
 	snapshot                    monitor.Snapshot
@@ -104,7 +107,7 @@ func New(options Options) *Model {
 
 	m := &Model{
 		ctx: ctx, path: options.ConfigPath, cfg: options.Config,
-		backend: options.Backend, desktop: options.Desktop, changes: options.Changes, notices: options.Notices,
+		backend: options.Backend, desktop: options.Desktop, herdr: options.Herdr, changes: options.Changes, notices: options.Notices,
 		width: 80, height: 24, focus: -1, input: textinput.New(), area: textarea.New(), busy: map[string]bool{},
 	}
 	m.input.Prompt = "> "

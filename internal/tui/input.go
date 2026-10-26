@@ -10,11 +10,12 @@ import (
 	"git.pegasko.art/catsona/gstatus/internal/config"
 	"git.pegasko.art/catsona/gstatus/internal/desktop"
 	"git.pegasko.art/catsona/gstatus/internal/github"
+	"git.pegasko.art/catsona/gstatus/internal/herdr"
 )
 
 var (
 	globalControls = []string{"search", "filter", "sort", "sort_direction", "toggle_auto_refresh", "refresh_interval", "refresh", "settings", "help", "quit"}
-	prControls     = []string{"open", "copy_url", "mark_read", "mark_unread", "refresh_selected", "rerun_failed", "rerun_all", "cancel_ci"}
+	prControls     = []string{"open", "open_herdr", "copy_url", "mark_read", "mark_unread", "refresh_selected", "rerun_failed", "rerun_all", "cancel_ci"}
 	controls       = append(append([]string{}, globalControls...), prControls...)
 )
 
@@ -166,6 +167,38 @@ func (m *Model) perform(action string) tea.Cmd {
 		m.saveConfig(cfg, false)
 	case "settings":
 		m.settings, m.menu = true, ""
+	case "open_herdr":
+		record, ok := m.selected()
+		if !ok {
+			return nil
+		}
+		if !m.cfg.Herdr.Enabled {
+			m.setMessage("Herdr integration is disabled")
+			return nil
+		}
+		if m.herdr == nil {
+			m.setMessage("Herdr integration is unavailable")
+			return nil
+		}
+		if m.busy[record.PR.ID] {
+			return nil
+		}
+
+		m.busy[record.PR.ID] = true
+		m.setMessage("Opening Herdr space…")
+		request := herdr.Request{
+			Root:  m.cfg.Herdr.Root,
+			Label: fmt.Sprintf("PR #%d - %s", record.PR.Number, record.PR.Repository),
+			PRKey: record.PR.Url,
+		}
+		opener, ctx := m.herdr, m.ctx
+		generation := m.snapshot.Generation
+		id := record.PR.ID
+		return func() tea.Msg {
+			result := operationResult{generation: generation, id: id, releaseBusy: true, message: "Opened Herdr space"}
+			result.err = opener.Open(ctx, request)
+			return result
+		}
 	case "mark_read", "mark_unread":
 		record, ok := m.selected()
 		if !ok {
@@ -294,7 +327,7 @@ func (m *Model) menuOptions() []menuOption {
 		return []menuOption{{"created", "Created"}, {"updated", "PR updated"}, {"ci", "Last CI"}, {"review", "Last review"}, {"message", "Last message"}, {"reverse", "Reverse order"}}
 	default:
 		var result []menuOption
-		for _, action := range []string{"open", "copy_url", "mark_read", "mark_unread", "rerun_all", "rerun_failed", "cancel_ci", "search", "filter", "sort", "sort_direction", "refresh_selected", "refresh", "toggle_auto_refresh", "refresh_interval", "settings", "quit"} {
+		for _, action := range []string{"open", "open_herdr", "copy_url", "mark_read", "mark_unread", "rerun_all", "rerun_failed", "cancel_ci", "search", "filter", "sort", "sort_direction", "refresh_selected", "refresh", "toggle_auto_refresh", "refresh_interval", "settings", "quit"} {
 			result = append(result, menuOption{value: action, label: strings.Join(m.cfg.Keys[action], ", ") + "  " + actionLabel(action)})
 		}
 		return result

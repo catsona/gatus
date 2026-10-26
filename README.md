@@ -24,7 +24,7 @@ Versioned archives for macOS ARM64, Linux ARM64 and Linux AMD64 are available fr
 
 The top bar controls search, the state filter, sorting, sort direction, auto-refresh, the refresh interval and full refresh. Settings, help and quit are also available there.
 
-The bottom bar acts on the selected pull request. It opens or copies the URL, changes the read mark, refreshes the pull request, reruns failed or all CI jobs, and cancels active CI. Use Tab, Shift+Tab or the arrow keys to move focus, then press Enter. Use the mouse on either bar. Use the arrow keys or `j` and `k` to select a pull request. Double-click a row to open it.
+The bottom bar acts on the selected pull request. It opens the PR or an optional Herdr space, copies the URL, changes the read mark, refreshes the pull request, reruns failed or all CI jobs, and cancels active CI. Use Tab, Shift+Tab or the arrow keys to move focus, then press Enter. Use the mouse on either bar. Use the arrow keys or `j` and `k` to select a pull request. Double-click a row to open it.
 
 The bars wrap to fit the terminal. In a short terminal, controls show their shortcuts and the status line names the focused action. Press `?` for the complete shortcut list and `,` for settings.
 
@@ -35,6 +35,7 @@ The Branch column shows `conflict`, `ok` or `unknown`. Narrow terminals show `!!
 | Key | Action |
 | --- | --- |
 | Enter / `o` | Open the pull request in a browser |
+| `e` | Open or create the selected PR's Herdr space when enabled |
 | `y` | Copy the pull request URL |
 | `m` / `u` | Mark read / unread |
 | `r` / `a` / `i` | Refresh / toggle auto-refresh / change interval |
@@ -48,6 +49,8 @@ The Branch column shows `conflict`, `ok` or `unknown`. Narrow terminals show `!!
 ## Configuration and state
 
 Configuration and state are stored in `~/.gstatus/`. Edit `config.yaml` or use the settings screen. Valid changes apply without a restart. The first load marks existing pull requests as read. Copying a URL never changes its read state.
+
+Herdr integration is disabled by default. Enable it in Settings, set the Herdr root path, and press `e` on a selected PR. gstatus focuses the existing tagged space or creates a new space with that root as its working directory. Clone the repository and start Codex or another agent from the new space manually.
 
 The header shows the active `gh` login. After `gh auth switch`, the application updates the account during its next account check. Each account has separate read state.
 

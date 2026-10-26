@@ -13,6 +13,7 @@ import (
 	"charm.land/lipgloss/v2"
 	"git.pegasko.art/catsona/gstatus/internal/config"
 	"git.pegasko.art/catsona/gstatus/internal/github"
+	"git.pegasko.art/catsona/gstatus/internal/herdr"
 	"git.pegasko.art/catsona/gstatus/internal/model"
 	"git.pegasko.art/catsona/gstatus/internal/monitor"
 	"github.com/charmbracelet/x/ansi"
@@ -76,6 +77,16 @@ func (d *desktopFixture) Open(_ context.Context, value string) error {
 func (d *desktopFixture) Copy(_ context.Context, value string) error {
 	d.copied = value
 	return nil
+}
+
+type herdrFixture struct {
+	requests []herdr.Request
+	err      error
+}
+
+func (h *herdrFixture) Open(_ context.Context, request herdr.Request) error {
+	h.requests = append(h.requests, request)
+	return h.err
 }
 
 func testModel(t *testing.T, cfg config.Config) (*Model, *backendFixture, *desktopFixture) {
@@ -265,6 +276,89 @@ func TestCancelCapturesSelectedPRAndPreventsDuplicateRequests(t *testing.T) {
 	m.Update(command())
 	if len(backend.cancelled) != 1 || backend.cancelled[0] != "a" || len(backend.marked) != 0 {
 		t.Fatalf("cancel used the wrong selection or acknowledged it: %+v %+v", backend.cancelled, backend.marked)
+	}
+}
+
+func TestOpeningHerdrUsesSelectedPRAndConfiguredRoot(t *testing.T) {
+	cfg := config.Default()
+	cfg.Herdr.Enabled = true
+	cfg.Herdr.Root = "/tmp/herdr-root"
+	m, _, _ := testModel(t, cfg)
+	m.snapshot.Records[0].PR.Repository = "acme/app"
+	m.snapshot.Records[0].PR.Number = 1
+	m.Update(m.snapshot)
+	opener := &herdrFixture{}
+	m.herdr = opener
+
+	press(m, 'j')
+	command := press(m, 'e')
+	if command == nil {
+		t.Fatal("Herdr shortcut did not start an operation")
+	}
+	m.Update(command())
+
+	if len(opener.requests) != 1 {
+		t.Fatalf("Herdr requests = %+v", opener.requests)
+	}
+	want := herdr.Request{Root: "/tmp/herdr-root", Label: "PR #1 - acme/app", PRKey: "https://github.com/acme/app/pull/1"}
+	if opener.requests[0] != want {
+		t.Fatalf("Herdr request = %+v, want %+v", opener.requests[0], want)
+	}
+}
+
+func TestDisabledHerdrShortcutDoesNotInvokeTheClient(t *testing.T) {
+	m, _, _ := testModel(t, config.Default())
+	opener := &herdrFixture{}
+	m.herdr = opener
+
+	if command := press(m, 'e'); command != nil {
+		t.Fatal("disabled Herdr shortcut started an operation")
+	}
+	if !strings.Contains(strings.ToLower(m.message), "disabled") || len(opener.requests) != 0 {
+		t.Fatalf("disabled Herdr state: message=%q requests=%+v", m.message, opener.requests)
+	}
+}
+
+func TestHerdrShortcutPreventsDuplicateRequests(t *testing.T) {
+	cfg := config.Default()
+	cfg.Herdr.Enabled = true
+	m, _, _ := testModel(t, cfg)
+	opener := &herdrFixture{}
+	m.herdr = opener
+
+	command := press(m, 'e')
+	if command == nil || press(m, 'e') != nil {
+		t.Fatal("duplicate Herdr operation was accepted")
+	}
+	m.Update(command())
+	if len(opener.requests) != 1 {
+		t.Fatalf("Herdr requests = %+v", opener.requests)
+	}
+}
+
+func TestHerdrSettingsPersist(t *testing.T) {
+	m, _, _ := testModel(t, config.Default())
+	m.settings = true
+	rows := m.settingRows()
+
+	for index, row := range rows {
+		if row.id == "herdr_enabled" {
+			m.settingIndex = index
+			m.activateSetting()
+		}
+	}
+	for index, row := range m.settingRows() {
+		if row.id == "herdr_root" {
+			m.settingIndex = index
+			m.activateSetting()
+			m.input.SetValue("/tmp/herdr-root")
+			m.saveEditor(false)
+		}
+	}
+
+	loaded, err := config.Load(m.path)
+	if err != nil || !loaded.Herdr.Enabled || loaded.Herdr.Root != "/tmp/herdr-root" {
+		t.Fatalf("Herdr settings were not persisted: %+v %v", loaded.Herdr, err)
 	}
 }
 

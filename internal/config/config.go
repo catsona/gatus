@@ -7,6 +7,7 @@ import (
 	"net/url"
 	"regexp"
 	"slices"
+	"strings"
 	"text/template"
 	"time"
 
@@ -40,6 +41,7 @@ type Config struct {
 	Refresh       Refresh             `yaml:"refresh"`
 	View          View                `yaml:"view"`
 	Read          Read                `yaml:"read"`
+	Herdr         Herdr               `yaml:"herdr"`
 	Notifications Notifications       `yaml:"notifications"`
 	Keys          map[string][]string `yaml:"keys"`
 }
@@ -63,6 +65,12 @@ type Read struct {
 	MarkOnOpen bool `yaml:"mark_on_open"`
 }
 
+// Herdr controls optional workspace opening for the selected pull request.
+type Herdr struct {
+	Enabled bool   `yaml:"enabled"`
+	Root    string `yaml:"root"`
+}
+
 // Notifications filters future events; enabling it does not replay history.
 type Notifications struct {
 	Enabled    bool     `yaml:"enabled"`
@@ -79,6 +87,7 @@ func Default() Config {
 		Refresh:      Refresh{Enabled: true, Interval: Duration(30 * time.Second)},
 		View:         View{Filter: "open", Sort: "updated", Descending: true},
 		Read:         Read{MarkOnOpen: true},
+		Herdr:        Herdr{Root: "~"},
 		Notifications: Notifications{
 			Events:   []string{"comment.created", "thread.reply", "review.submitted", "ci.success", "ci.failure", "pr.state_changed", "pr.created"},
 			Template: "{{.PR.Url}} {{.PR.Title}} status update: {{.Event.Summary}}",
@@ -87,7 +96,8 @@ func Default() Config {
 			"up": {"up", "k"}, "down": {"down", "j"},
 			"focus_next": {"tab"}, "focus_previous": {"shift+tab"},
 			"open": {"enter", "o"}, "copy_url": {"y"},
-			"mark_read": {"m"}, "mark_unread": {"u"},
+			"open_herdr": {"e"},
+			"mark_read":  {"m"}, "mark_unread": {"u"},
 			"refresh": {"r"}, "toggle_auto_refresh": {"a"}, "refresh_interval": {"i"},
 			"refresh_selected": {"p"},
 			"search":           {"/"}, "filter": {"f"}, "sort": {"s"},
@@ -127,6 +137,14 @@ func Parse(data []byte) (Config, error) {
 			}
 		}
 	}
+	if _, explicit := supplied.Keys["open_herdr"]; !explicit {
+		for action, bindings := range supplied.Keys {
+			if action != "open_herdr" && slices.ContainsFunc(bindings, func(key string) bool { return CanonicalKey(key) == "e" }) {
+				cfg.Keys["open_herdr"] = []string{}
+				break
+			}
+		}
+	}
 
 	if err := cfg.Validate(); err != nil {
 		return Config{}, err
@@ -143,6 +161,10 @@ func (c Config) Validate() error {
 
 	if time.Duration(c.Refresh.Interval) < 5*time.Second {
 		return fmt.Errorf("refresh interval must be at least 5s")
+	}
+
+	if c.Herdr.Enabled && strings.TrimSpace(c.Herdr.Root) == "" {
+		return fmt.Errorf("Herdr root must be set when the integration is enabled")
 	}
 
 	repositoryName := regexp.MustCompile(`^[A-Za-z0-9_.-]+/[A-Za-z0-9_.-]+$`)

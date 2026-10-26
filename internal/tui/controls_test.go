@@ -52,6 +52,9 @@ func TestControlsStayOnTheirSideOfThePRList(t *testing.T) {
 
 			global := []string{"search", "filter", "sort", "sort_direction", "toggle_auto_refresh", "refresh_interval", "refresh", "settings", "help", "quit"}
 			selected := []string{"open", "copy_url", "mark_read", "mark_unread", "refresh_selected", "rerun_failed", "rerun_all", "cancel_ci"}
+			if cfg.Herdr.Enabled {
+				selected = append(selected[:1], append([]string{"open_herdr"}, selected[1:]...)...)
+			}
 			seen := map[string]bool{}
 			for _, region := range regions {
 				if slices.Contains(global, region.action) && region.y >= firstRow {
@@ -71,6 +74,27 @@ func TestControlsStayOnTheirSideOfThePRList(t *testing.T) {
 				}
 			}
 		})
+	}
+}
+
+func TestEnabledHerdrControlUsesTheSelectedPR(t *testing.T) {
+	cfg := config.Default()
+	cfg.Herdr.Enabled = true
+	m, _, _ := testModel(t, cfg)
+	opener := &herdrFixture{}
+	m.herdr = opener
+	_, regions := m.layout()
+	region := slices.IndexFunc(regions, func(region hitRegion) bool { return region.action == "open_herdr" })
+	if region < 0 {
+		t.Fatal("missing Herdr control")
+	}
+	_, command := m.Update(tea.MouseClickMsg{X: regions[region].x, Y: regions[region].y, Button: tea.MouseLeft})
+	if command == nil {
+		t.Fatal("Herdr control did not start an operation")
+	}
+	m.Update(command())
+	if len(opener.requests) != 1 || opener.requests[0].PRKey != "https://github.com/acme/app/pull/2" {
+		t.Fatalf("Herdr mouse request = %+v", opener.requests)
 	}
 }
 

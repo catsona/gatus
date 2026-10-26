@@ -10,7 +10,7 @@ func (m *Model) controlBar(actions []string, y int, compact bool) ([]string, []h
 	var lines []string
 	var regions []hitRegion
 	line, x := "", 0
-	for _, action := range actions {
+	for _, action := range m.visibleControls(actions) {
 		text := "[" + clean(m.hint(action)) + "]"
 		if !compact {
 			text += " " + m.controlLabel(action)
@@ -43,6 +43,14 @@ func (m *Model) controlBar(actions []string, y int, compact bool) ([]string, []h
 		x += width
 	}
 	return append(lines, line), regions
+}
+
+func (m *Model) visibleControls(actions []string) []string {
+	if m.cfg.Herdr.Enabled {
+		return actions
+	}
+
+	return slices.DeleteFunc(slices.Clone(actions), func(action string) bool { return action == "open_herdr" })
 }
 
 func (m *Model) controlBars() ([]string, []string, []hitRegion) {

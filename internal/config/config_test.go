@@ -42,6 +42,19 @@ func TestNewSortDirectionShortcutPreservesExistingBindings(t *testing.T) {
 	}
 }
 
+func TestNewHerdrShortcutPreservesExistingBindings(t *testing.T) {
+	cfg, err := Parse([]byte("keys:\n  open: [e]\n"))
+	if err != nil {
+		t.Fatalf("existing config no longer loads: %v", err)
+	}
+	if len(cfg.Keys["open_herdr"]) != 0 || len(cfg.Keys["open"]) != 1 || cfg.Keys["open"][0] != "e" {
+		t.Fatalf("existing shortcut was replaced: %+v", cfg.Keys)
+	}
+	if _, err := Parse([]byte("keys:\n  open: [e]\n  open_herdr: [e]\n")); err == nil {
+		t.Fatal("explicit duplicate bindings were accepted")
+	}
+}
+
 func TestTemplateFieldsThroughIndex(t *testing.T) {
 	cfg := Default()
 	cfg.Notifications.Template = `{{if .Event.Type}}{{$check := index .PR.Checks 0}}{{$check.Missing}}{{end}}`
@@ -59,6 +72,24 @@ func TestFunctionKeysAndModifierOrder(t *testing.T) {
 	_, err := Parse([]byte("keys:\n  copy_url: [f1]\n  open: [shift+ctrl+x]\nnotifications:\n  template: '{{with .PR}}{{.Url}}{{end}} {{range .PR.Runs}}{{.Name}}{{end}}'\n"))
 	if err != nil {
 		t.Fatalf("valid bindings or template rejected: %v", err)
+	}
+}
+
+func TestHerdrConfiguration(t *testing.T) {
+	cfg, err := Parse([]byte("herdr:\n  enabled: true\n  root: ~/spaces\n"))
+	if err != nil || !cfg.Herdr.Enabled || cfg.Herdr.Root != "~/spaces" {
+		t.Fatalf("herdr settings were not parsed: %+v %v", cfg.Herdr, err)
+	}
+
+	defaults, err := Parse([]byte("{}\n"))
+	if err != nil || defaults.Herdr.Enabled || defaults.Herdr.Root != "~" {
+		t.Fatalf("herdr defaults changed: %+v %v", defaults.Herdr, err)
+	}
+}
+
+func TestHerdrEnabledRequiresRoot(t *testing.T) {
+	if _, err := Parse([]byte("herdr:\n  enabled: true\n  root: '  '\n")); err == nil {
+		t.Fatal("enabled Herdr integration accepted a blank root")
 	}
 }
 

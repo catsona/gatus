@@ -31,6 +31,8 @@ func (m *Model) settingRows() []settingRow {
 		{"notify_enabled", "Webhook notifications", checked(m.cfg.Notifications.Enabled), true},
 		{"webhook_url", "Webhook URL", m.cfg.Notifications.WebhookURL, false},
 		{"template", "Message template", m.cfg.Notifications.Template, false},
+		{"herdr_enabled", "Herdr spaces", checked(m.cfg.Herdr.Enabled), true},
+		{"herdr_root", "Herdr root", m.cfg.Herdr.Root, false},
 	}
 
 	for _, event := range config.Default().Notifications.Events {
@@ -66,6 +68,8 @@ func (m *Model) activateSetting() tea.Cmd {
 		switch row.id {
 		case "mark_on_open":
 			cfg.Read.MarkOnOpen = !cfg.Read.MarkOnOpen
+		case "herdr_enabled":
+			cfg.Herdr.Enabled = !cfg.Herdr.Enabled
 		case "notify_enabled":
 			cfg.Notifications.Enabled = !cfg.Notifications.Enabled
 		default:
@@ -157,6 +161,8 @@ func (m *Model) saveEditor(force bool) {
 		cfg.Refresh.Interval = config.Duration(interval)
 	case "repositories":
 		cfg.Repositories = splitValues(value)
+	case "herdr_root":
+		cfg.Herdr.Root = strings.TrimSpace(value)
 	case "webhook_url":
 		cfg.Notifications.WebhookURL = strings.TrimSpace(value)
 	case "template":

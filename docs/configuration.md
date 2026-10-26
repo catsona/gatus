@@ -21,6 +21,9 @@ view:
   search: ""
 read:
   mark_on_open: true
+herdr:
+  enabled: false
+  root: ~
 notifications:
   enabled: false
   webhook_url: ""
@@ -36,6 +39,8 @@ notifications:
 ```
 
 `repositories` contains `owner/repo` names. The application shows pull requests authored by the active GitHub user. The current implementation supports `github.com`.
+
+`herdr.enabled` enables the selected-PR Herdr action. When enabled, `herdr.root` is the working directory for newly created Herdr workspaces; `~` refers to your home directory. The action focuses an existing workspace for the PR or creates a new one when the previous workspace was closed. gstatus does not clone a repository or start an agent in the workspace.
 
 `refresh.interval` accepts Go duration strings and must be at least `5s`. Account detection runs every two seconds, even when auto-refresh is disabled.
 
@@ -125,6 +130,7 @@ keys:
   filter: [f]
   sort: [s]
   sort_direction: [S]
+  open_herdr: [e]
   rerun_all: [ctrl+r]
   rerun_failed: [R]
   cancel_ci: [x]
@@ -135,6 +141,8 @@ keys:
 ```
 
 Equivalent keys cannot control different actions. Editor controls remain Enter to save and Esc to cancel. The multiline template editor uses Ctrl+S to save. Ctrl+C always quits.
+
+`open_herdr` opens the selected pull request's Herdr workspace. The action is available only when `herdr.enabled` is true. A workspace is identified by a `gstatus_pr` metadata token based on the pull request URL. If the tagged workspace is live, gstatus focuses it; otherwise it creates and focuses a new workspace with `herdr.root` as its working directory. Repository cloning and agent startup remain manual.
 
 ## State and desktop commands
 

@@ -16,6 +16,7 @@ import (
 	"git.pegasko.art/catsona/gstatus/internal/config"
 	"git.pegasko.art/catsona/gstatus/internal/desktop"
 	"git.pegasko.art/catsona/gstatus/internal/github"
+	"git.pegasko.art/catsona/gstatus/internal/herdr"
 	"git.pegasko.art/catsona/gstatus/internal/monitor"
 	"git.pegasko.art/catsona/gstatus/internal/notify"
 	"git.pegasko.art/catsona/gstatus/internal/state"
@@ -89,7 +90,8 @@ func Run(ctx context.Context, directory string, output io.Writer) error {
 	services.Go(func() { worker.Run(ctx, engine.Session, report) })
 	model := tui.New(tui.Options{
 		Context: ctx, ConfigPath: path, Config: cfg, Backend: engine,
-		Desktop: desktop.Native{}, Changes: config.Watch(ctx, path), Notices: notices,
+		Desktop: desktop.Native{}, Herdr: herdr.Client{Executable: "herdr"},
+		Changes: config.Watch(ctx, path), Notices: notices,
 	})
 	_, err = tea.NewProgram(model, tea.WithContext(ctx), tea.WithOutput(output)).Run()
 	wasCancelled := ctx.Err() != nil
