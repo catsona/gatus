@@ -1,10 +1,16 @@
 # gstatus
 
-A terminal monitor for your GitHub pull requests, powered by `gh`. Keep CI, reviews, comments and replies visible in one terminal.
+`gstatus` monitors your GitHub pull requests in a terminal. It shows CI, review, comment and reply activity, and lets you open, copy, refresh, rerun or cancel CI for the selected pull request.
 
-## Install and start
+## Requirements
 
-Install Go 1.26+ and [GitHub CLI](https://cli.github.com/) 2.96+, then run:
+- Go 1.26 or newer.
+- GitHub CLI 2.96 or newer.
+- A terminal at least 40 columns wide and 10 rows high for the full layout.
+
+The application uses the active `gh` account and supports GitHub.com. For a private module checkout, set `GOPRIVATE=git.pegasko.art/catsona/gstatus`.
+
+## Install
 
 ```sh
 go install git.pegasko.art/catsona/gstatus/cmd/gstatus@latest
@@ -12,39 +18,38 @@ gh auth login
 gstatus
 ```
 
-For a private repository, Git needs access to `git.pegasko.art`. Set `GOPRIVATE=git.pegasko.art/catsona/gstatus` for the install command if needed.
+Versioned archives for macOS ARM64, Linux ARM64 and Linux AMD64 are available from [Forgejo Releases](https://git.pegasko.art/catsona/gstatus/releases). Check an installed binary with `gstatus --version`.
 
-Versioned archives for macOS ARM64, Linux ARM64 and Linux AMD64 are available in [Forgejo Releases](https://git.pegasko.art/catsona/gstatus/releases). Run `gstatus --version` to see the installed version.
+## Use the monitor
 
-The top bar controls the list: search, state filters, sorting, auto-refresh, interval and refresh all. Settings, help and quit are also at the top.
+The top bar controls search, the state filter, sorting, sort direction, auto-refresh, the refresh interval and full refresh. Settings, help and quit are also available there.
 
-The bottom bar acts on the selected PR: open, copy, mark read or unread, refresh, rerun failed or all CI jobs, and cancel CI. Both bars support mouse clicks and keyboard focus with Tab, Shift+Tab or left/right arrows. Press Enter to activate the focused button. Up/down arrows or `j`/`k` select a PR. Double-click a PR to open it.
+The bottom bar acts on the selected pull request. It opens or copies the URL, changes the read mark, refreshes the pull request, reruns failed or all CI jobs, and cancels active CI. Use Tab, Shift+Tab or the arrow keys to move focus, then press Enter. Use the mouse on either bar. Use the arrow keys or `j` and `k` to select a pull request. Double-click a row to open it.
 
-The bars wrap with the terminal width. In short terminals, buttons show their shortcuts, and the status line names the focused action. Press `?` for all shortcuts and `,` for settings.
+The bars wrap to fit the terminal. In a short terminal, controls show their shortcuts and the status line names the focused action. Press `?` for the complete shortcut list and `,` for settings.
 
-The indicator before each PR shows `…` while queued, an animated spinner while refreshing, and `·` while idle. It tracks full-list and selected-PR refreshes separately from unread marks.
+The indicator before each pull request shows `…` for queued work, an animated spinner while work runs and `·` while idle. It tracks full-list and selected-pull-request refreshes separately from read marks.
 
-The Branch column shows merge conflicts (`conflict`), no conflicts (`ok`), or a pending result (`unknown`). Narrow terminals use `!!`, `ok` and `?`.
-
-The state filter limits which PRs are monitored and refreshed. Text search only hides rows. Read marks survive state filter changes.
+The Branch column shows `conflict`, `ok` or `unknown`. Narrow terminals show `!!`, `ok` or `?`. The state filter controls which pull requests are monitored and refreshed. Text search only hides rows. Read marks survive state filter changes.
 
 | Key | Action |
 | --- | --- |
-| Enter / `o` | Open in the browser |
-| `y` | Copy the PR URL |
+| Enter / `o` | Open the pull request in a browser |
+| `y` | Copy the pull request URL |
 | `m` / `u` | Mark read / unread |
 | `r` / `a` / `i` | Refresh / toggle auto-refresh / change interval |
-| `p` | Refresh only the selected PR |
+| `p` | Refresh only the selected pull request |
 | `/` / `f` / `s` | Search / filter / sort |
-| `S` | Switch sort direction between ASC and DESC |
+| `S` | Switch between ascending and descending sort |
 | `R` / Ctrl+R | Rerun failed jobs / all jobs |
-| `x` | Cancel active CI for the selected PR |
+| `x` | Cancel active CI for the selected pull request |
 | `q` | Quit |
 
-All settings and state live in `~/.gstatus/`. Edit `config.yaml` or use the settings screen. Changes apply without a restart. The first load marks existing PRs read. Copying never changes read state.
+## Configuration and state
 
-The header shows the active `gh` login. Switching with `gh auth switch` changes the displayed account within the next account check. Each account keeps separate read state.
+Configuration and state are stored in `~/.gstatus/`. Edit `config.yaml` or use the settings screen. Valid changes apply without a restart. The first load marks existing pull requests as read. Copying a URL never changes its read state.
 
-- [Configuration reference](docs/configuration.md): repositories, hotkeys, webhook events and templates.
-- [Development and binary builds](docs/development.md): tests, packages and Forgejo artifacts.
+The header shows the active `gh` login. After `gh auth switch`, the application updates the account during its next account check. Each account has separate read state.
 
+- [Configuration reference](docs/configuration.md)
+- [Development and binary builds](docs/development.md)

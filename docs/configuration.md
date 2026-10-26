@@ -1,12 +1,12 @@
 # Configuration reference
 
-The config path is `~/.gstatus/config.yaml`. The application creates defaults on its first interactive start. Unknown fields and invalid values reject the entire update. A running application keeps its last valid config and displays the error.
+The application reads `~/.gstatus/config.yaml`. It creates the file with defaults on the first interactive start. Unknown fields and invalid values reject the complete update. The running application keeps the last valid configuration and displays the error.
 
-The settings screen saves valid changes immediately. If an external edit conflicts with an open editor, `l` discards the draft and `w` saves the edited field. Other externally updated fields remain intact.
+The settings screen saves valid changes immediately. If an external edit changes a field while it is open, press `l` to load the new value or `w` to save the draft. Other externally changed fields remain intact.
 
 ## Fields
 
-Omitted fields use defaults. An explicit empty list disables a list of events or hotkeys. An empty repository list includes all accessible repositories.
+Omitted fields use their defaults. An empty repository list includes every accessible repository. An empty event or hotkey list disables that list.
 
 ```yaml
 version: 1
@@ -35,33 +35,31 @@ notifications:
   template: '{{.PR.Url}} {{.PR.Title}} status update: {{.Event.Summary}}'
 ```
 
-`repositories` contains `owner/repo` names. The author is always the active GitHub user. The current implementation supports `github.com`.
+`repositories` contains `owner/repo` names. The application shows pull requests authored by the active GitHub user. The current implementation supports `github.com`.
 
-`refresh.interval` accepts Go duration strings, with a minimum of `5s`. Account detection runs independently every two seconds, including when auto-refresh is off.
+`refresh.interval` accepts Go duration strings and must be at least `5s`. Account detection runs every two seconds, even when auto-refresh is disabled.
 
-`refresh_selected` updates only the selected PR's CI, reviews and comments. It does not rediscover the list or fetch other PRs, and it preserves read marks. The action works with auto-refresh disabled. `refresh` still refreshes the full list.
+`view.filter` accepts `all`, `open`, `closed`, `draft` and `merged`. The filter controls discovery, monitoring and manual or automatic refreshes. `open` includes drafts. `closed` excludes merged pull requests. Text search remains local and only hides rows.
 
-`view.filter` accepts `all`, `open`, `closed`, `draft` and `merged`. `open` includes drafts. `closed` excludes merged PRs. The filter limits discovery and monitoring, including manual and automatic refreshes. PRs outside it do not count as monitored or enter the refresh queue. Historical PRs load when the selected filter needs them.
+When a pull request leaves the selected filter, the application records its final state transition and stops polling it. A pull request that reopens is handled in the same way. Cached read marks remain available when you select that state again.
 
-When an observed PR leaves the filter, gstatus records its final state transition and stops polling it. This includes closed PRs that reopen. Cached read marks remain available when you select that state again. Text search only hides rows and does not change monitoring.
+`view.sort` accepts `created`, `updated`, `ci`, `review` and `message`. Unknown timestamps sort last. Search matches the repository, pull request number and title.
 
-`view.sort` accepts `created`, `updated`, `ci`, `review` and `message`. Message time includes issue comments and review-thread comments. Unknown times sort last. Search matches repository, PR number and title locally.
+`view.descending` selects descending order when `true` and ascending order when `false`. Use the direction control or press `S` to switch. The setting applies to every sort field and is saved immediately. If an existing configuration assigns `S` to another action, the direction control remains available and the default shortcut stays unbound.
 
-`view.descending` selects DESC when `true` and ASC when `false`. Use the direction button beside the sort field or press `S` to switch. The direction applies to every sort field and is saved immediately. Unknown timestamps stay last in both directions.
+Review status colors are green for approval, red for requested changes, yellow for comments and gray when no verdict is available. Pull request state colors are green for open, red for closed, purple for merged and gray for draft. The Branch column uses red for `conflict`, green for `ok` and the default color for `unknown`.
 
-If an existing config assigns `S` to another action, the direction button remains available and its new default shortcut stays unbound. Explicit duplicate bindings still reject the config.
+## Selected refresh and CI actions
 
-`read.mark_on_open` acknowledges displayed events after the browser command succeeds. Events arriving during that command stay unread. Copying never acknowledges events.
+`refresh_selected` updates only the selected pull request's CI, reviews and comments. It does not rediscover the list or fetch other pull requests, and it preserves read marks. `refresh` updates the full list.
 
-Review status colors are green for approval, red for requested changes, yellow for comments, and gray when no review verdict is available. Colors remain visible on read PRs and the selected row.
+`cancel_ci` cancels queued and running GitHub Actions workflows for the selected pull request's current revision. Completed workflows and external CI are skipped. The action checks the active account and revision again before sending requests.
 
-PR state colors are green for open, red for closed, purple for merged, and gray for draft. In narrow terminals, the state prefix in the title uses the same color.
-
-The Branch column shows `conflict` in red or `ok` in green. `unknown` means GitHub has not returned a mergeability result. This status describes merge conflicts, independently of CI and review requirements. Below 65 columns, the compact Br column uses `!!`, `ok` and `?`.
+The rerun actions apply to the latest completed GitHub Actions runs for the current revision. Rerun failed starts only failed jobs. External CI is displayed but cannot be rerun.
 
 ## Webhook events
 
-The webhook receives a POST with `Content-Type: application/json` and one field:
+The webhook receives a JSON POST with one `text` field:
 
 ```json
 {"text":"https://github.com/owner/repo/pull/42 Fix build status update: CI passed"}
@@ -69,25 +67,21 @@ The webhook receives a POST with `Content-Type: application/json` and one field:
 
 | Event | Trigger |
 | --- | --- |
-| `comment.created` | Another author posts a PR comment or review-thread comment |
-| `thread.reply` | Another author comments in a review thread you already participated in |
+| `comment.created` | Another author posts a pull request or review-thread comment |
+| `thread.reply` | Another author replies in a review thread you joined |
 | `review.submitted` | Another author submits a review |
 | `ci.success` | All observed current CI completes successfully |
-| `ci.failure` | All observed current CI completes, with at least one failure |
-| `pr.state_changed` | The PR changes state or draft status |
-| `pr.created` | A new authored PR appears after the initial baseline |
+| `ci.failure` | All observed current CI completes with at least one failure |
+| `pr.state_changed` | The pull request changes state or draft status |
+| `pr.created` | A new authored pull request appears after the initial baseline |
 
-Bot activity counts. Your own comments and reviews do not trigger notifications. A reply emits `thread.reply` without a duplicate `comment.created` event.
+Bot activity counts. Your own comments and reviews do not trigger notifications. A thread reply emits `thread.reply` without a duplicate `comment.created` event.
 
-CI uses the current head and merge revisions, workflow runs and attempts. A terminal result must remain unchanged across two observations at least five seconds apart. With a `30s` interval, this usually takes the next refresh. Superseded cancellations do not notify. External checks display status, but reruns apply only to GitHub Actions.
+CI uses the current head and merge revisions, workflow runs and attempts. A terminal result must remain unchanged across two observations at least five seconds apart. Superseded cancellations do not notify. A delayed workflow can produce a later result because GitHub does not expose every future run.
 
-`cancel_ci` cancels the selected PR's active GitHub Actions executions. It includes queued and running workflows for the current revision, skips completed executions, and rechecks the account and revision before sending requests. External CI cannot be cancelled through this action. An accepted cancellation can take time to appear in the status.
+Notifications start after the account baseline. Enabling notifications does not replay history. Changing the URL or template affects the next delivery. Disabling an event removes its pending deliveries.
 
-GitHub does not expose a final list of every workflow that might start later. A delayed workflow can therefore produce a later CI result. Missing permissions, incomplete pagination and rate limits display errors instead of a successful CI result.
-
-Notifications start after the account baseline. Enabling them does not replay history. The persistent queue sends only for the active account. Changing the URL or template affects the next delivery. Disabling events removes their pending deliveries, including paused accounts.
-
-HTTP 2xx completes delivery. Transport errors, HTTP 408, 429 and 5xx allow five total attempts, with delays of 2, 5, 15 and 60 seconds. `Retry-After` can extend the delay. Each request has a ten-second timeout. Other HTTP errors remain failed in the database. Delivery can repeat if a receiver accepts a request but its response is lost.
+Delivery succeeds for any HTTP 2xx response. Transport errors, HTTP 408, 429 and 5xx responses allow five total attempts with delays of 2, 5, 15 and 60 seconds. `Retry-After` can extend a delay. Other HTTP errors remain failed in the database. A receiver can accept a request and still receive a retry if its response is lost.
 
 ## Template fields
 
@@ -99,7 +93,7 @@ Templates use Go `text/template`. The root contains `.PR`, `.Account` and `.Even
 | `.Account` | `Login`, `ID`, `Host` |
 | `.Event` | `Type`, `Summary`, `Url`, `Actor`, `OccurredAt`, `Field`, `Old`, `New` |
 
-The remaining PR timestamp, check and workflow fields are defined in [`internal/model/model.go`](../internal/model/model.go). The JSON encoder escapes the rendered text.
+The remaining pull request, check and workflow fields are defined in [`internal/model/model.go`](../internal/model/model.go). The JSON encoder escapes the rendered text.
 
 ```yaml
 notifications:
@@ -111,7 +105,7 @@ notifications:
 
 ## Hotkeys
 
-The `keys` map overrides individual actions. Key names accept characters, arrows, `enter`, `tab`, `esc`, `space`, navigation keys and `f1` through `f63`. Modifiers are `ctrl+`, `alt+`, `shift+` and `super+`. Equivalent keys cannot control different actions.
+The `keys` map overrides individual actions. Key names accept characters, arrows, `enter`, `tab`, `esc`, `space`, navigation keys and `f1` through `f63`. Modifiers are `ctrl+`, `alt+`, `shift+` and `super+`.
 
 ```yaml
 keys:
@@ -140,12 +134,10 @@ keys:
   quit: [q, ctrl+c]
 ```
 
-Editor controls remain Enter to save and Esc to cancel. The multiline template editor uses Ctrl+S to save. Ctrl+C always quits.
+Equivalent keys cannot control different actions. Editor controls remain Enter to save and Esc to cancel. The multiline template editor uses Ctrl+S to save. Ctrl+C always quits.
 
 ## State and desktop commands
 
-`~/.gstatus/state.db` contains account snapshots, read marks and the delivery queue. The account key combines the GitHub host with its immutable user ID. Credentials stay in memory. The application uses private directory and file permissions. Only one process can open the database at a time.
+`~/.gstatus/state.db` contains account snapshots, read marks and the delivery queue. The account key combines the GitHub host with the immutable user ID. Credentials stay in memory. The application uses private directory and file permissions, and only one process can open the database at a time.
 
-Browser launch uses `GH_BROWSER`, then `BROWSER`, then `open` on macOS or `xdg-open` on Linux. Configured commands accept quoted arguments and an optional `%s` URL placeholder.
-
-Copy uses `pbcopy` on macOS and `wl-copy`, `xclip` or `xsel` on Linux. If no helper exists, it requests clipboard access through the terminal's OSC 52 support.
+Browser launch uses `GH_BROWSER`, then `BROWSER`, then `open` on macOS or `xdg-open` on Linux. Copy uses `pbcopy` on macOS and `wl-copy`, `xclip` or `xsel` on Linux. If no clipboard helper exists, the application requests clipboard access through terminal OSC 52 support.

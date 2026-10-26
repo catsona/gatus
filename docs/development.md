@@ -1,63 +1,58 @@
-# Build and verify gstatus
+# Development
 
-Prerequisites: Go 1.26+, Git, and a shell. Interactive use also needs `gh` 2.96+ and a terminal of at least 40 columns by 10 rows.
+## Requirements
 
-## Run checks
+Install Go 1.26 or newer, Git and a POSIX shell. Interactive use also needs GitHub CLI 2.96 or newer and a terminal at least 40 columns wide and 10 rows high.
 
-1. Run the tests and race detector:
+## Verify changes
 
-   ```sh
-   go test -race ./...
-   ```
+Run the tests and race detector:
 
-2. Run static checks and inspect formatting:
+```sh
+go test -race ./...
+```
 
-   ```sh
-   go vet ./...
-   gofmt -l cmd internal
-   ```
+Run static checks and inspect formatting:
 
-Tests use fixture executables for `gh`, browser and clipboard operations. Webhook tests use local HTTP servers. Tests do not access your GitHub account or rerun real CI.
+```sh
+go vet ./...
+gofmt -l cmd internal
+```
+
+Tests use fixture executables for GitHub CLI, browser and clipboard operations. Webhook tests use local HTTP servers. Tests do not access a GitHub account or rerun real CI.
 
 ## Build binaries
 
-Run the build script from the checkout:
+Run the build script from the repository root:
 
 ```sh
 sh scripts/build.sh
 ```
 
-It produces these archives and `SHA256SUMS` in `dist/`:
+The script writes these archives and `SHA256SUMS` to `dist/`:
 
 - `gstatus-<version>-darwin-arm64.tar.gz`
 - `gstatus-<version>-linux-arm64.tar.gz`
 - `gstatus-<version>-linux-amd64.tar.gz`
 
-Each archive contains `gstatus`. The builds use `CGO_ENABLED=0`. Set `GSTATUS_VERSION` to override the version embedded by the script.
+Each archive contains `gstatus`. Builds use `CGO_ENABLED=0`. Set `GSTATUS_VERSION` to override the embedded version.
 
-The Forgejo workflow runs on pushes, pull requests and manual dispatch. It needs a runner with the `docker` label. It checks formatting, runs vet and race tests, builds all targets, and uploads `gstatus-binaries`.
+The Forgejo workflow runs on branch pushes, pull requests and manual dispatches. It checks formatting, runs vet and race tests, builds all targets and uploads `gstatus-binaries`. Version tags such as `v0.1.0` publish separate Forgejo Releases with the archives and `SHA256SUMS`.
 
-Pushes of version tags such as `v0.1.0` publish separate [Forgejo Releases](https://git.pegasko.art/catsona/gstatus/releases) with the archives and `SHA256SUMS`. Release tags remain attached to their original commits. Branch pushes, pull requests and manual dispatches upload workflow artifacts without publishing a release.
+`gstatus --version` reports the linked build version. A version installed with `go install ...@v0.1.0` uses Go module metadata when linker flags are absent.
 
-Release publication uses the workflow's built-in repository token. No additional secret is needed. The build embeds the version tag for tagged releases and the commit SHA for other builds.
+## Package boundaries
 
-`gstatus --version` reports the linked build version. Installs through `go install ...@v0.1.0` use Go module metadata to report `v0.1.0` without custom linker flags.
-
-The workflow targets Forgejo 9 and uses `upload-artifact@v3`. A successful local build does not confirm a remote runner completed the workflow.
-
-## Extend a component
-
-The package boundaries are:
-
-| Package | Contract |
+| Package | Responsibility |
 | --- | --- |
-| `internal/github` | Account-bound `gh` requests, pagination and Actions reruns |
-| `internal/monitor` | Snapshots, account generations, event reconciliation and aggregate CI |
-| `internal/state` | Account namespaces and transactional notification storage |
-| `internal/notify` | Template rendering and bounded webhook delivery |
-| `internal/config` | YAML validation, atomic saves and live reload |
-| `internal/desktop` | Browser and clipboard commands |
-| `internal/tui` | Rendering and keyboard/mouse actions |
-| `internal/app` | Startup and worker lifetimes |
+| `cmd/gstatus` | Start and stop the application |
+| `internal/config` | Parse, validate, write and reload YAML configuration |
+| `internal/github` | Run GitHub CLI requests, authenticate and normalize responses |
+| `internal/monitor` | Coordinate polling, account generations, events and aggregate CI |
+| `internal/state` | Store account namespaces and notification queues in bbolt |
+| `internal/notify` | Render templates and deliver webhooks with bounded retries |
+| `internal/tui` | Render the interface and handle keyboard or mouse actions |
+| `internal/desktop` | Open browser links and copy URLs |
+| `internal/app` | Manage startup and worker lifetimes |
 
-Keep network operations outside the TUI update loop. Bind data and mutation requests to captured credentials. Commit observed state and its new deliveries together. Preserve event sequence boundaries when adding acknowledgement actions.
+Keep network operations outside the TUI update loop. Bind data and mutation requests to captured credentials. Commit observed state and new deliveries in one transaction. Preserve event sequence boundaries when adding acknowledgement actions.
