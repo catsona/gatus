@@ -6,6 +6,7 @@ import (
 	"errors"
 	"os"
 	"path/filepath"
+	"slices"
 	"strings"
 	"testing"
 	"time"
@@ -316,7 +317,7 @@ func TestCancelCapturesSelectedPRAndPreventsDuplicateRequests(t *testing.T) {
 	}
 }
 
-func TestOpeningHerdrListsAndFocusesSelectedSpace(t *testing.T) {
+func TestAttachingHerdrListsAndFocusesSelectedSpace(t *testing.T) {
 	cfg := config.Default()
 	cfg.Herdr.Enabled = true
 	cfg.Herdr.Root = "/tmp/herdr-root"
@@ -329,7 +330,7 @@ func TestOpeningHerdrListsAndFocusesSelectedSpace(t *testing.T) {
 	m.herdr, m.links = service, links
 
 	press(m, 'j')
-	command := press(m, 'e')
+	command := press(m, 'E')
 	if command == nil {
 		t.Fatal("Herdr shortcut did not start an operation")
 	}
@@ -360,14 +361,69 @@ func TestCreatingHerdrSpaceLinksSelectedPR(t *testing.T) {
 	links := &herdrLinksFixture{links: map[string]model.HerdrLink{}}
 	m.herdr, m.links = service, links
 
-	command := press(m, 'E')
+	_, command := m.Update(tea.KeyPressMsg{Code: 'e', Mod: tea.ModCtrl})
 	if command == nil {
-		t.Fatal("shift+e did not start Herdr create")
+		t.Fatal("ctrl+e did not start Herdr create")
 	}
 	m.Update(command())
 
 	if len(service.created) != 1 || links.links["https://github.com/acme/app/pull/2"].WorkspaceID != "new-space" {
 		t.Fatalf("created=%+v links=%+v", service.created, links.links)
+	}
+}
+
+func TestOpeningLinkedHerdrSpaceFocusesTheStoredID(t *testing.T) {
+	cfg := config.Default()
+	cfg.Herdr.Enabled = true
+	m, _, _ := testModel(t, cfg)
+	service := &herdrFixture{}
+	links := &herdrLinksFixture{links: map[string]model.HerdrLink{
+		"https://github.com/acme/app/pull/2": {PRURL: "https://github.com/acme/app/pull/2", WorkspaceID: "space-1"},
+	}}
+	m.herdr, m.links = service, links
+
+	command := press(m, 'e')
+	if command == nil {
+		t.Fatal("e did not start linked Herdr focus")
+	}
+	m.Update(command())
+	if !slices.Equal(service.focused, []string{"space-1"}) {
+		t.Fatalf("linked Herdr focus = %+v", service.focused)
+	}
+}
+
+func TestOpeningHerdrWithoutLinkReportsAnError(t *testing.T) {
+	cfg := config.Default()
+	cfg.Herdr.Enabled = true
+	m, _, _ := testModel(t, cfg)
+	service := &herdrFixture{}
+	m.herdr, m.links = service, &herdrLinksFixture{links: map[string]model.HerdrLink{}}
+
+	if command := press(m, 'e'); command != nil {
+		t.Fatal("e opened an unlinked Herdr PR")
+	}
+	if !strings.Contains(strings.ToLower(m.message), "not linked") {
+		t.Fatalf("unlinked Herdr message = %q", m.message)
+	}
+}
+
+func TestOpeningClosedHerdrSpaceReportsClosed(t *testing.T) {
+	cfg := config.Default()
+	cfg.Herdr.Enabled = true
+	m, _, _ := testModel(t, cfg)
+	service := &herdrFixture{focusErr: errors.New("workspace_not_found")}
+	links := &herdrLinksFixture{links: map[string]model.HerdrLink{
+		"https://github.com/acme/app/pull/2": {PRURL: "https://github.com/acme/app/pull/2", WorkspaceID: "space-1"},
+	}}
+	m.herdr, m.links = service, links
+
+	command := press(m, 'e')
+	if command == nil {
+		t.Fatal("e did not start linked Herdr focus")
+	}
+	m.Update(command())
+	if !strings.Contains(strings.ToLower(m.message), "closed") {
+		t.Fatalf("closed Herdr message = %q", m.message)
 	}
 }
 
@@ -381,7 +437,7 @@ func TestFailedHerdrFocusKeepsThePreviousLink(t *testing.T) {
 	}}
 	m.herdr, m.links = service, links
 
-	if command := press(m, 'e'); command == nil {
+	if command := press(m, 'E'); command == nil {
 		t.Fatal("Herdr attach did not start")
 	} else {
 		m.Update(command())
@@ -419,8 +475,8 @@ func TestHerdrShortcutPreventsDuplicateRequests(t *testing.T) {
 	m.herdr = service
 	m.links = &herdrLinksFixture{links: map[string]model.HerdrLink{}}
 
-	command := press(m, 'e')
-	if command == nil || press(m, 'e') != nil {
+	command := press(m, 'E')
+	if command == nil || press(m, 'E') != nil {
 		t.Fatal("duplicate Herdr operation was accepted")
 	}
 	m.Update(command())

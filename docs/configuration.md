@@ -40,7 +40,7 @@ notifications:
 
 `repositories` contains `owner/repo` names. The application shows pull requests authored by the active GitHub user. The current implementation supports `github.com`.
 
-`herdr.enabled` enables the selected-PR Herdr action. When enabled, `herdr.root` is the working directory for newly created Herdr workspaces; `~` refers to your home directory. The action focuses an existing workspace for the PR or creates a new one when the previous workspace was closed. gstatus does not clone a repository or start an agent in the workspace.
+`herdr.enabled` enables the selected-PR Herdr actions. When enabled, `herdr.root` is the working directory for newly created Herdr workspaces; `~` refers to your home directory. gstatus does not clone a repository or start an agent in the workspace.
 
 `refresh.interval` accepts Go duration strings and must be at least `5s`. Account detection runs every two seconds, even when auto-refresh is disabled.
 
@@ -131,7 +131,8 @@ keys:
   sort: [s]
   sort_direction: [S]
   open_herdr: [e]
-  create_herdr: [shift+e]
+  attach_herdr: [shift+e]
+  create_herdr: [ctrl+e]
   rerun_all: [ctrl+r]
   rerun_failed: [R]
   cancel_ci: [x]
@@ -143,7 +144,7 @@ keys:
 
 Equivalent keys cannot control different actions. Editor controls remain Enter to save and Esc to cancel. The multiline template editor uses Ctrl+S to save. Ctrl+C always quits.
 
-`open_herdr` lists live Herdr workspaces for the selected pull request. Choose a workspace to attach it to the PR and focus it. The current link is preselected when it is live. `create_herdr` creates a new workspace with `herdr.root` as its working directory, stores its workspace ID for the PR, and focuses it. Links are stored in `state.db`, and several PRs can reference one workspace. A workspace label or working directory does not identify a link. Repository cloning and agent startup remain manual.
+`open_herdr` focuses the workspace linked to the selected pull request. If no link exists, gstatus reports an error. If Herdr reports that the workspace is closed, gstatus reports that state and keeps the link. `attach_herdr` lists live spaces, lets you choose one, stores its workspace ID for the PR, and focuses it. `create_herdr` creates a new workspace with `herdr.root` as its working directory, stores its workspace ID for the PR, and focuses it. Links are stored in `state.db`, and several PRs can reference one workspace. A workspace label or working directory does not identify a link. Repository cloning and agent startup remain manual.
 
 ## State and desktop commands
 

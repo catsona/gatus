@@ -17,7 +17,7 @@ import (
 
 var (
 	globalControls = []string{"search", "filter", "sort", "sort_direction", "toggle_auto_refresh", "refresh_interval", "refresh", "settings", "help", "quit"}
-	prControls     = []string{"open", "open_herdr", "create_herdr", "copy_url", "mark_read", "mark_unread", "refresh_selected", "rerun_failed", "rerun_all", "cancel_ci"}
+	prControls     = []string{"open", "open_herdr", "attach_herdr", "create_herdr", "copy_url", "mark_read", "mark_unread", "refresh_selected", "rerun_failed", "rerun_all", "cancel_ci"}
 	controls       = append(append([]string{}, globalControls...), prControls...)
 )
 
@@ -171,6 +171,8 @@ func (m *Model) perform(action string) tea.Cmd {
 	case "settings":
 		m.settings, m.menu = true, ""
 	case "open_herdr":
+		return m.openHerdrSpace()
+	case "attach_herdr":
 		return m.listHerdrSpaces()
 	case "create_herdr":
 		return m.createHerdrSpace()
@@ -279,6 +281,48 @@ func (m *Model) listHerdrSpaces() tea.Cmd {
 	return func() tea.Msg {
 		spaces, err := service.List(ctx)
 		return operationResult{generation: generation, id: id, herdrMode: "list", herdrSpaces: spaces, err: err}
+	}
+}
+
+func (m *Model) openHerdrSpace() tea.Cmd {
+	record, ok := m.selected()
+	if !ok {
+		return nil
+	}
+	if !m.cfg.Herdr.Enabled {
+		m.setMessage("Herdr integration is disabled")
+		return nil
+	}
+	if m.herdr == nil || m.links == nil {
+		m.setMessage("Herdr integration is unavailable")
+		return nil
+	}
+	link, linked, err := m.links.HerdrLink(record.PR.Url)
+	if err != nil {
+		m.setMessage(err.Error())
+		return nil
+	}
+	if !linked || link.WorkspaceID == "" {
+		m.setMessage("PR is not linked to a Herdr space")
+		return nil
+	}
+	if m.busy[record.PR.ID] {
+		return nil
+	}
+
+	m.busy[record.PR.ID] = true
+	m.setMessage("Opening linked Herdr space…")
+	service, ctx := m.herdr, m.ctx
+	generation := m.snapshot.Generation
+	id := record.PR.ID
+	workspaceID := link.WorkspaceID
+	return func() tea.Msg {
+		err := service.Focus(ctx, workspaceID)
+		message := "Opened linked Herdr space"
+		if err != nil && herdr.IsWorkspaceNotFound(err) {
+			err = errors.New("linked Herdr space is closed")
+		}
+		return operationResult{generation: generation, id: id, herdrMode: "open", releaseBusy: true, message: message, err: err}
 	}
 }
 
@@ -425,7 +469,7 @@ func (m *Model) menuOptions() []menuOption {
 		return options
 	default:
 		var result []menuOption
-		for _, action := range []string{"open", "open_herdr", "create_herdr", "copy_url", "mark_read", "mark_unread", "rerun_all", "rerun_failed", "cancel_ci", "search", "filter", "sort", "sort_direction", "refresh_selected", "refresh", "toggle_auto_refresh", "refresh_interval", "settings", "quit"} {
+		for _, action := range []string{"open", "open_herdr", "attach_herdr", "create_herdr", "copy_url", "mark_read", "mark_unread", "rerun_all", "rerun_failed", "cancel_ci", "search", "filter", "sort", "sort_direction", "refresh_selected", "refresh", "toggle_auto_refresh", "refresh_interval", "settings", "quit"} {
 			result = append(result, menuOption{value: action, label: strings.Join(m.cfg.Keys[action], ", ") + "  " + actionLabel(action)})
 		}
 		return result

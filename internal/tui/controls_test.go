@@ -54,7 +54,7 @@ func TestControlsStayOnTheirSideOfThePRList(t *testing.T) {
 			global := []string{"search", "filter", "sort", "sort_direction", "toggle_auto_refresh", "refresh_interval", "refresh", "settings", "help", "quit"}
 			selected := []string{"open", "copy_url", "mark_read", "mark_unread", "refresh_selected", "rerun_failed", "rerun_all", "cancel_ci"}
 			if cfg.Herdr.Enabled {
-				selected = append(selected[:1], append([]string{"open_herdr", "create_herdr"}, selected[1:]...)...)
+				selected = append(selected[:1], append([]string{"open_herdr", "attach_herdr", "create_herdr"}, selected[1:]...)...)
 			}
 			seen := map[string]bool{}
 			for _, region := range regions {
@@ -86,7 +86,7 @@ func TestEnabledHerdrControlUsesTheSelectedPR(t *testing.T) {
 	m.herdr = service
 	m.links = &herdrLinksFixture{links: map[string]model.HerdrLink{}}
 	_, regions := m.layout()
-	region := slices.IndexFunc(regions, func(region hitRegion) bool { return region.action == "open_herdr" })
+	region := slices.IndexFunc(regions, func(region hitRegion) bool { return region.action == "attach_herdr" })
 	if region < 0 {
 		t.Fatal("missing Herdr control")
 	}

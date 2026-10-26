@@ -35,8 +35,9 @@ The Branch column shows `conflict`, `ok` or `unknown`. Narrow terminals show `!!
 | Key | Action |
 | --- | --- |
 | Enter / `o` | Open the pull request in a browser |
-| `e` | Attach the selected PR to an existing Herdr space when enabled |
-| Shift+E | Create and link a new Herdr space when enabled |
+| `e` | Open the selected PR's linked Herdr space when enabled |
+| Shift+E | Attach the selected PR to an existing Herdr space when enabled |
+| Ctrl+E | Create and link a new Herdr space when enabled |
 | `y` | Copy the pull request URL |
 | `m` / `u` | Mark read / unread |
 | `r` / `a` / `i` | Refresh / toggle auto-refresh / change interval |
@@ -51,7 +52,7 @@ The Branch column shows `conflict`, `ok` or `unknown`. Narrow terminals show `!!
 
 Configuration and state are stored in `~/.gstatus/`. Edit `config.yaml` or use the settings screen. Valid changes apply without a restart. The first load marks existing pull requests as read. Copying a URL never changes its read state.
 
-Herdr integration is disabled by default. Enable it in Settings and set the Herdr root path. Press `e` to choose a live Herdr space for the selected PR, or press Shift+`e` to create and link a new one. gstatus stores the link by Herdr workspace ID in `state.db`, so renaming or moving a space does not change the link. One space can serve several pull requests. Clone the repository and start Codex or another agent from a new space manually.
+Herdr integration is disabled by default. Enable it in Settings and set the Herdr root path. Press `e` to open the linked space, Shift+E to attach an existing space, or Ctrl+E to create and link a new one. gstatus stores the link by Herdr workspace ID in `state.db`, so renaming or moving a space does not change the link. One space can serve several pull requests. If the linked space is closed, gstatus reports the error and keeps the link. Clone the repository and start Codex or another agent from a new space manually.
 
 The header shows the active `gh` login. After `gh auth switch`, the application updates the account during its next account check. Each account has separate read state.
 

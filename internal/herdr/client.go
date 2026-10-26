@@ -228,6 +228,11 @@ func workspaceNotFound(err error) bool {
 	return strings.Contains(message, "workspace_not_found") || strings.Contains(message, "workspace not found")
 }
 
+// IsWorkspaceNotFound reports whether Herdr could not find a workspace.
+func IsWorkspaceNotFound(err error) bool {
+	return err != nil && workspaceNotFound(err)
+}
+
 func expandRoot(root string) (string, error) {
 	root = strings.TrimSpace(root)
 	if root == "" {

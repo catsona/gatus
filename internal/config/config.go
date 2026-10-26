@@ -96,7 +96,7 @@ func Default() Config {
 			"up": {"up", "k"}, "down": {"down", "j"},
 			"focus_next": {"tab"}, "focus_previous": {"shift+tab"},
 			"open": {"enter", "o"}, "copy_url": {"y"},
-			"open_herdr": {"e"}, "create_herdr": {"shift+e"},
+			"open_herdr": {"e"}, "attach_herdr": {"shift+e"}, "create_herdr": {"ctrl+e"},
 			"mark_read": {"m"}, "mark_unread": {"u"},
 			"refresh": {"r"}, "toggle_auto_refresh": {"a"}, "refresh_interval": {"i"},
 			"refresh_selected": {"p"},
@@ -147,8 +147,16 @@ func Parse(data []byte) (Config, error) {
 	}
 	if _, explicit := supplied.Keys["create_herdr"]; !explicit {
 		for action, bindings := range supplied.Keys {
-			if action != "create_herdr" && slices.ContainsFunc(bindings, func(key string) bool { return CanonicalKey(key) == "E" }) {
+			if action != "create_herdr" && slices.ContainsFunc(bindings, func(key string) bool { return CanonicalKey(key) == "ctrl+e" }) {
 				cfg.Keys["create_herdr"] = []string{}
+				break
+			}
+		}
+	}
+	if _, explicit := supplied.Keys["attach_herdr"]; !explicit {
+		for action, bindings := range supplied.Keys {
+			if action != "attach_herdr" && slices.ContainsFunc(bindings, func(key string) bool { return CanonicalKey(key) == "E" }) {
+				cfg.Keys["attach_herdr"] = []string{}
 				break
 			}
 		}
